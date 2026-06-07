@@ -30,11 +30,12 @@
 | gl | f-gl | text | 集合場所 |
 | opponents | f-opponents | textarea | 対戦相手一覧（複数行） |
 | fee | f-fee | text | 参加費・交通費 |
+| imgurl | f-imgurl | hidden | 元データ画像のDrive URL（自動入力） |
 | mo | f-mo | textarea | 持ち物・メモ |
 | results | (動的生成) | JSON | 試合結果（試合毎：opp/us/th/scorers） |
 
-`results` はURLパラメータ非対応（試合後入力のため）。
+`results`・`imgurl` はURLパラメータ非対応（`results` は試合後入力、`imgurl` はDrive経由自動生成）。
 
 ## スプレッドシートスキーマ（eventsシート）
 
-`id, team, type, ttl, date, cat, ga, gv, dismiss, ve, vemap, gl, opponents, fee, results, mo`
+`id, team, type, ttl, date, cat, ga, gv, dismiss, ve, vemap, gl, opponents, fee, imgurl, results, mo`

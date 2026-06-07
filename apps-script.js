@@ -34,7 +34,7 @@ function doPost(e) {
   if (action === 'save') {
     var ws = ss.getSheetByName(sheetName);
     var headers = sheetName === 'events'
-      ? ['id','team','type','ttl','date','cat','ga','gv','dismiss','ve','vemap','gl','opponents','fee','results','mo']
+      ? ['id','team','type','ttl','date','cat','ga','gv','dismiss','ve','vemap','gl','opponents','fee','imgurl','results','mo']
       : ['id','team','ttl','body','date'];
 
     if (!ws) {
@@ -66,6 +66,20 @@ function doPost(e) {
       ws.appendRow(rowData);
     }
     return json({ ok: true });
+  }
+
+  if (action === 'uploadImage') {
+    var filename = payload.filename || 'image.jpg';
+    var base64Data = payload.base64;
+    var mimeType = payload.mimeType || 'image/jpeg';
+    var bytes = Utilities.base64Decode(base64Data);
+    var blob = Utilities.newBlob(bytes, mimeType, filename);
+    var folderName = 'yugawa-soccer-images';
+    var folders = DriveApp.getFoldersByName(folderName);
+    var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+    var file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return json({ ok: true, url: 'https://drive.google.com/uc?export=view&id=' + file.getId() });
   }
 
   if (action === 'delete') {

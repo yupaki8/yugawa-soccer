@@ -184,6 +184,10 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .r-rm{background:none;border:none;color:var(--lose);cursor:pointer;font-size:18px;line-height:1;padding:0 4px;flex-shrink:0;}
 .radd{width:100%;background:none;border:1.5px dashed var(--border);border-radius:9px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;}
 .radd.fa:hover{border-color:var(--fa);color:var(--fa);}.radd.chu:hover{border-color:var(--chu);color:var(--chu);}
+.img-area{border:2px dashed var(--border);border-radius:9px;padding:14px;text-align:center;cursor:pointer;color:var(--muted);font-size:12px;transition:border-color .2s,color .2s;}
+.img-area.fa:hover{border-color:var(--fa);color:var(--fa);}.img-area.chu:hover{border-color:var(--chu);color:var(--chu);}
+.img-preview{width:100%;border-radius:7px;margin-top:8px;display:none;}
+.img-st{font-size:11px;margin-top:5px;min-height:14px;}
 </style>
 </head>
 <body>
@@ -353,6 +357,15 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <div class="fg"><label class="fl">参加費・交通費</label>
         <input class="fi fa" id="f-fee" placeholder="例：参加費1,000円 / 交通費700円">
       </div>
+      <div class="fg"><label class="fl">元データ画像</label>
+        <div class="img-area fa" id="img-area" onclick="document.getElementById('f-img').click()">
+          <div id="img-area-txt">📎 クリックで選択 / 貼り付け（Ctrl+V）可</div>
+          <div class="img-st" id="img-st"></div>
+          <img class="img-preview" id="img-preview" alt="">
+        </div>
+        <input type="file" id="f-img" accept="image/*" style="display:none" onchange="handleImgSelect(this)">
+        <input type="hidden" id="f-imgurl">
+      </div>
       <div class="fg"><label class="fl">試合結果（試合毎に追加）</label>
         <div id="results-list"></div>
         <button class="radd fa" id="radd-btn" type="button" onclick="addResultRow()">＋ 試合を追加</button>
@@ -434,16 +447,16 @@ async function gasGet(sheet){
   }catch(e){ return null; }
 }
 
-async function gasPost(payload){
-  if(!GAS_URL) return false;
+async function gasPostRaw(payload){
+  if(!GAS_URL)return null;
   try{
-    const res=await fetch(GAS_URL,{
-      method:'POST',
-      body:JSON.stringify(payload)
-    });
-    const d=await res.json();
-    return d.ok===true;
-  }catch(e){ return false; }
+    const res=await fetch(GAS_URL,{method:'POST',body:JSON.stringify(payload)});
+    return await res.json();
+  }catch(e){return null;}
+}
+async function gasPost(payload){
+  const d=await gasPostRaw(payload);
+  return d!==null&&d.ok===true;
 }
 
 async function syncAll(){
@@ -561,7 +574,7 @@ function renderList(){
     let sc='';
     if(scored.length===1){const r=scored[0],us=parseInt(r.us),th=parseInt(r.th),res=us>th?'win':us<th?'lose':'draw';const rl={win:'勝',lose:'負',draw:'分'};sc='<div class="escore"><div class="sv '+res+'">'+us+'-'+th+'</div><div class="sl2 '+res+'">'+rl[res]+'</div></div>';}
     else if(scored.length>1){let w=0,dr=0,l=0;scored.forEach(r=>{const us=parseInt(r.us),th=parseInt(r.th);if(us>th)w++;else if(us===th)dr++;else l++;});sc='<div class="escore"><div class="sv" style="font-size:12px;color:var(--text)">'+scored.length+'試合</div><div class="sl2" style="background:#f0f0f0;color:var(--muted)">'+w+'勝'+dr+'分'+l+'負</div></div>';}
-    let meta='';if(e.ga)meta+='<span>⏰'+e.ga+'</span>';if(e.dismiss)meta+='<span>🏁'+e.dismiss+'</span>';if(e.ve)meta+='<span>📍'+e.ve+'</span>';if(e.cat)meta+='<span>🏷'+e.cat+'</span>';if(e.fee)meta+='<span>💴'+e.fee+'</span>';
+    let meta='';if(e.ga)meta+='<span>⏰'+e.ga+'</span>';if(e.dismiss)meta+='<span>🏁'+e.dismiss+'</span>';if(e.ve)meta+='<span>📍'+e.ve+'</span>';if(e.cat)meta+='<span>🏷'+e.cat+'</span>';if(e.fee)meta+='<span>💴'+e.fee+'</span>';if(e.imgurl)meta+='<span>📎</span>';
     card.innerHTML='<div class="ein"><div class="edc '+dcCls+'"><div class="em">'+MN[d.getMonth()]+'</div><div class="ed '+team+'">'+d.getDate()+'</div><div class="edw">'+DOWS[d.getDay()]+'</div></div><div class="eb"><span class="tchip tchip-'+team+'">'+info.n+'</span><span class="tbdg '+bCls+'">'+tpL+'</span><div class="et">'+(e.ttl||'（タイトルなし）')+'</div>'+(meta?'<div class="emeta">'+meta+'</div>':'')+'</div>'+sc+'</div>';
     card.addEventListener('click',()=>openDetail(e.id));con.appendChild(card);
   });
@@ -575,6 +588,9 @@ function openNew(){
   document.getElementById('fm-banner').textContent=info.i+' '+info.n+' の試合';
   ['f-ttl','f-ga','f-gv','f-dismiss','f-ve','f-vemap','f-gl','f-opponents','f-fee','f-mo'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('results-list').innerHTML='';
+  document.getElementById('f-imgurl').value='';document.getElementById('f-img').value='';
+  document.getElementById('img-preview').src='';document.getElementById('img-preview').style.display='none';
+  document.getElementById('img-st').textContent='';document.getElementById('img-area-txt').textContent='📎 クリックで選択 / 貼り付け（Ctrl+V）可';
   document.getElementById('f-dt').value=new Date().toISOString().slice(0,10);
   document.getElementById('f-cat').value=t==='chu'?'U15':'U11';
   setFmColor(t);selType('of');
@@ -589,6 +605,7 @@ function setFmColor(t){
   document.querySelectorAll('.rrow input').forEach(el=>{el.className=el.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;});
   document.getElementById('sav-btn').className='sav '+t;
   document.getElementById('radd-btn').className='radd '+t;
+  const ia=document.getElementById('img-area');ia.className=ia.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;
 }
 
 function selType(tp){
@@ -617,6 +634,7 @@ async function saveEv(){
     gl:document.getElementById('f-gl').value.trim(),
     opponents:document.getElementById('f-opponents').value.trim(),
     fee:document.getElementById('f-fee').value.trim(),
+    imgurl:document.getElementById('f-imgurl').value.trim(),
     results:JSON.stringify(results),
     mo:document.getElementById('f-mo').value.trim()};
   const ok=await gasPost({action:'save',sheet:'events',data:ev});
@@ -654,6 +672,7 @@ function openDetail(id){
   if(ev.opponents)h+='<div class="dr"><div class="dl">対戦相手</div><div class="dv" style="white-space:pre-wrap">'+ev.opponents+'</div></div>';
   if(ev.fee)h+='<div class="dr"><div class="dl">参加費等</div><div class="dv">'+ev.fee+'</div></div>';
   if(ev.mo)h+='<div class="dr"><div class="dl">持ち物・メモ</div><div class="dv" style="white-space:pre-wrap">'+ev.mo+'</div></div>';
+  if(ev.imgurl)h+='<div class="dr"><div class="dl">元データ</div><div class="dv"><a href="'+ev.imgurl+'" target="_blank" rel="noopener"><img src="'+ev.imgurl+'" style="width:100%;border-radius:7px;margin-top:2px" onerror="this.style.display=\'none\';this.insertAdjacentHTML(\'afterend\',\'<span style=\\\"font-size:11px;color:var(--muted)\\\">リンクで開く →</span>\')"></a></div></div>';
   h+='<button class="edb '+t+'" onclick="openEdit(\''+id+'\')">✏️ 編集</button>';
   h+='<button class="delb" onclick="delEv(\''+id+'\')">🗑 削除</button>';
   document.getElementById('dm-body').innerHTML=h;
@@ -680,6 +699,11 @@ function openEdit(id){
   document.getElementById('results-list').innerHTML='';
   const evResults=ev.results?JSON.parse(ev.results):[];
   evResults.forEach(r=>addResultRow(r.opp,r.us,r.th,r.scorers,t));
+  const imgurl=ev.imgurl||'';
+  document.getElementById('f-imgurl').value=imgurl;document.getElementById('f-img').value='';
+  const prev=document.getElementById('img-preview');
+  if(imgurl){prev.src=imgurl;prev.style.display='block';document.getElementById('img-area-txt').textContent='✅ 画像あり（変更する場合は選択）';document.getElementById('img-st').textContent='';}
+  else{prev.src='';prev.style.display='none';document.getElementById('img-area-txt').textContent='📎 クリックで選択 / 貼り付け（Ctrl+V）可';document.getElementById('img-st').textContent='';}
   document.getElementById('f-mo').value=ev.mo||'';
   document.getElementById('f-cat').value=ev.cat||'U11';
   setFmColor(t);selType(ev.type||'of');
@@ -767,6 +791,50 @@ function renderStats(){
     rs.forEach((r,i)=>{const us=parseInt(r.us),th=parseInt(r.th),res=(!isNaN(us)&&!isNaN(th))?(us>th?'win':us<th?'lose':'draw'):null,resL=res?{win:'勝',lose:'負',draw:'分'}[res]:'－',resC=res?'color:var(--'+res+')':'';const tr=document.createElement('tr');const titleCell=i===0?((e.ttl||'')+(e.cat?'<br><span style="color:var(--muted);font-size:10px">'+e.cat+'</span>':'')):(r.opp?'<span style="color:var(--muted)">'+r.opp+'</span>':'');tr.innerHTML='<td style="white-space:nowrap">'+(i===0?e.date:'')+'</td><td style="font-size:11px">'+titleCell+'</td><td style="'+resC+';font-weight:700;font-size:12px">'+resL+'</td><td style="font-family:\'Oswald\',sans-serif;font-size:14px">'+(!isNaN(us)&&!isNaN(th)?us+'-'+th:'－')+'</td>';tbody.appendChild(tr);});
   });
 }
+
+// ===== 画像アップロード =====
+function compressImage(file,maxW,q){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        let w=img.width,h=img.height;
+        if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(c.toDataURL('image/jpeg',q));
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+async function processImageFile(file){
+  const st=document.getElementById('img-st');
+  st.textContent='📤 アップロード中...';
+  document.getElementById('img-area-txt').textContent=file.name||'画像';
+  const b64=await compressImage(file,1200,0.82);
+  const prev=document.getElementById('img-preview');
+  prev.src=b64;prev.style.display='block';
+  if(!GAS_URL){st.textContent='❌ Apps Script URLが未設定';return;}
+  const res=await gasPostRaw({action:'uploadImage',filename:file.name||'image.jpg',mimeType:file.type||'image/jpeg',base64:b64.split(',')[1]});
+  if(res&&res.ok&&res.url){
+    document.getElementById('f-imgurl').value=res.url;
+    prev.src=res.url;
+    st.textContent='✅ アップロード完了';
+  }else{
+    st.textContent='❌ アップロード失敗（URLを確認）';
+  }
+}
+function handleImgSelect(input){if(input.files[0])processImageFile(input.files[0]);}
+document.addEventListener('paste',function(e){
+  if(!document.getElementById('fm').classList.contains('open'))return;
+  const imgItem=Array.from(e.clipboardData.items).find(i=>i.type.startsWith('image/'));
+  if(!imgItem)return;
+  e.preventDefault();
+  processImageFile(imgItem.getAsFile());
+});
 
 // ===== 試合結果行 =====
 function addResultRow(opp,us,th,scorers,t){
