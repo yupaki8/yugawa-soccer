@@ -758,7 +758,12 @@ function openDetail(id){
   if(ev.ga)h+='<div class="dr"><div class="dl">集合（クラブハウス）</div><div class="dv">'+ev.ga+'</div></div>';
   if(ev.gv)h+='<div class="dr"><div class="dl">集合（会場）</div><div class="dv">'+ev.gv+'</div></div>';
   if(ev.dismiss)h+='<div class="dr"><div class="dl">解散予定</div><div class="dv">'+ev.dismiss+'</div></div>';
-  if(ev.ve||ev.vemap){h+='<div class="dr"><div class="dl">会場</div><div class="dv">'+(ev.ve||'')+(ev.vemap?'<br><a href="'+ev.vemap+'" target="_blank" rel="noopener" style="color:var(--'+t+');font-size:12px">📍 Google マップで開く</a>':'')+'</div></div>';}
+  if(ev.ve||ev.vemap){
+    const mapLink=ev.vemap
+      ?'<br><a href="'+ev.vemap+'" target="_blank" rel="noopener" style="color:var(--'+t+');font-size:12px">📍 Google マップで開く</a>'
+      :(ev.ve?'<br><a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(ev.ve)+'" target="_blank" rel="noopener" style="color:var(--'+t+');font-size:12px">🔍 Google マップで検索</a>':'');
+    h+='<div class="dr"><div class="dl">会場</div><div class="dv">'+(ev.ve||'')+mapLink+'</div></div>';
+  }
   if(ev.gl)h+='<div class="dr"><div class="dl">集合場所</div><div class="dv">'+ev.gl+'</div></div>';
   if(evResults.length>0){const rl2={win:'勝',lose:'負',draw:'分'};h+='<div class="dr"><div class="dl">試合結果</div><div class="dv">';evResults.forEach(r=>{const us=parseInt(r.us),th=parseInt(r.th),ok=!isNaN(us)&&!isNaN(th),res=ok?(us>th?'win':us<th?'lose':'draw'):null;h+='<div style="margin-bottom:6px">';h+='<div style="display:flex;align-items:center;gap:6px">';if(r.ko)h+='<span style="font-size:11px;color:var(--muted)">⏰'+r.ko+'</span>';if(r.opp)h+='<span style="font-size:11px;color:var(--muted)">'+r.opp+'</span>';if(ok)h+='<span class="sv '+res+'" style="font-size:15px">'+us+'-'+th+'</span><span class="sl2 '+res+'">'+rl2[res]+'</span>';h+='</div>';if(r.scorers)h+='<div style="font-size:11px;color:var(--muted);margin-top:2px">⚽ '+r.scorers+'</div>';h+='</div>';});h+='</div></div>';}
   if(ev.opponents)h+='<div class="dr"><div class="dl">対戦相手</div><div class="dv" style="white-space:pre-wrap">'+ev.opponents+'</div></div>';
