@@ -894,11 +894,7 @@ async function handleAiFile(input){
     b64=b64full.split(',')[1];mimeType='image/jpeg';
   }
 
-  const [aiResult,imgResult]=await Promise.all([
-    gasPostRaw({action:'analyzeImage',base64:b64,mimeType,filename:file.name}),
-    mimeType!=='application/pdf'?gasPostRaw({action:'uploadImage',filename:file.name||'image.jpg',mimeType:'image/jpeg',base64:b64}):Promise.resolve(null)
-  ]);
-
+  const aiResult=await gasPostRaw({action:'analyzeImage',base64:b64,mimeType,filename:file.name});
   btn.disabled=false;btn.textContent='📸 AI';
 
   if(!aiResult||!aiResult.ok){
@@ -930,15 +926,21 @@ async function handleAiFile(input){
     data.matches.forEach(m=>addResultRow(m.opp||'',m.ko||'','','','',team));
   }
 
-  // 元画像をDriveに添付
-  if(imgResult&&imgResult.ok&&imgResult.url){
-    document.getElementById('f-imgurl').value=imgResult.url;
-    const prev=document.getElementById('img-preview');
-    prev.src=imgResult.url;prev.style.display='block';
-    document.getElementById('img-area-txt').textContent='✅ AI読み込み済み';
-  }
+  showToast('✅ AI完了 — 画像アップロード中...',10000);
 
-  showToast('✅ AI読み込み完了');
+  // 元画像をDriveに添付（AI完了後に実行）
+  if(mimeType!=='application/pdf'){
+    const imgResult=await gasPostRaw({action:'uploadImage',filename:file.name||'image.jpg',mimeType:'image/jpeg',base64:b64});
+    if(imgResult&&imgResult.ok&&imgResult.url){
+      document.getElementById('f-imgurl').value=imgResult.url;
+      const prev=document.getElementById('img-preview');
+      prev.src=imgResult.url;prev.style.display='block';
+      document.getElementById('img-area-txt').textContent='✅ AI読み込み済み';
+      showToast('✅ 画像アップロード完了');
+    }else{
+      showToast('⚠️ 画像アップロード失敗（手動で添付可）');
+    }
+  }
 }
 
 // ===== URLパラメータから試合登録フォームを自動入力 =====
