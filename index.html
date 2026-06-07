@@ -429,7 +429,22 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
-<input type="file" id="ai-file-input" accept="image/*,application/pdf" multiple style="display:none" onchange="handleAiFile(this)">
+<input type="file" id="ai-file-input" accept="image/*,application/pdf" style="display:none" onchange="aiStageFile(this)">
+<!-- AI ステージングモーダル -->
+<div class="mbg" id="ai-stage-modal">
+  <div class="modal">
+    <div class="mh"></div>
+    <div class="mhdr">
+      <div class="mtitle">📸 AI読み込み</div>
+      <button class="mclose" onclick="closeAiStage()">&#10005;</button>
+    </div>
+    <div class="mbody">
+      <div id="ai-stage-thumbs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;min-height:10px;"></div>
+      <button id="ai-add-btn" onclick="document.getElementById('ai-file-input').click()" style="width:100%;padding:12px;border:2px dashed var(--border);border-radius:var(--r);background:none;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;margin-bottom:10px;">＋ 画像・PDFを追加</button>
+      <button id="ai-analyze-btn" onclick="aiAnalyze()" disabled style="width:100%;padding:13px;border:none;border-radius:var(--r);background:#ccc;color:#fff;font-size:13px;font-weight:700;cursor:not-allowed;font-family:'Noto Sans JP',sans-serif;">🤖 AI解析</button>
+    </div>
+  </div>
+</div>
 <!-- AI結果モーダル -->
 <div class="mbg" id="ai-modal">
   <div class="modal">
@@ -921,35 +936,74 @@ function addResultRow(opp,ko,us,th,scorers,t){
 
 // ===== ユーティリティ =====
 function showToast(msg,ms){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),ms||2800);}
-['fm','dm','nm','ai-modal'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('open');});});
+['fm','dm','nm','ai-modal','ai-stage-modal'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('open');});});
 
 // ===== AI読み込み =====
-function aiImport(){document.getElementById('ai-file-input').click();}
+let _aiStaged=[];
 
-async function handleAiFile(input){
-  const files=Array.from(input.files);
-  if(!files.length)return;
-  input.value='';
-  if(files.length>5){showToast('画像は最大5枚まで');return;}
-  const btn=document.getElementById('ai-btn');
-  btn.disabled=true;btn.textContent='⏳ AI';
-  showToast('🤖 AI読み込み中...',30000);
+function aiImport(){
+  _aiStaged=[];
+  renderAiStage();
+  document.getElementById('ai-stage-modal').classList.add('open');
+}
 
-  const images=[];
-  for(const file of files){
-    let b64,mimeType;
-    if(file.type==='application/pdf'){
-      const dataUrl=await new Promise(resolve=>{const r=new FileReader();r.onload=e=>resolve(e.target.result);r.readAsDataURL(file);});
-      b64=dataUrl.split(',')[1];mimeType='application/pdf';
+function closeAiStage(){
+  document.getElementById('ai-stage-modal').classList.remove('open');
+}
+
+function renderAiStage(){
+  const thumbs=document.getElementById('ai-stage-thumbs');
+  thumbs.innerHTML='';
+  _aiStaged.forEach((img,i)=>{
+    const wrap=document.createElement('div');
+    wrap.style.cssText='position:relative;width:72px;height:72px;';
+    if(img.mimeType==='application/pdf'){
+      wrap.innerHTML='<div style="width:72px;height:72px;border-radius:8px;background:#f3f0ff;display:flex;align-items:center;justify-content:center;font-size:24px;">📄</div>';
     }else{
-      const b64full=await compressImage(file,1600,0.85);
-      b64=b64full.split(',')[1];mimeType='image/jpeg';
+      wrap.innerHTML='<img src="'+img.thumb+'" style="width:72px;height:72px;object-fit:cover;border-radius:8px;">';
     }
-    images.push({b64,mimeType,filename:file.name});
-  }
+    wrap.innerHTML+='<button onclick="_aiStaged.splice('+i+',1);renderAiStage()" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:#e24b4a;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>';
+    thumbs.appendChild(wrap);
+  });
+  const addBtn=document.getElementById('ai-add-btn');
+  const anaBtn=document.getElementById('ai-analyze-btn');
+  const full=_aiStaged.length>=5;
+  addBtn.disabled=full;
+  addBtn.style.opacity=full?'0.4':'1';
+  addBtn.textContent=full?'（最大5枚）':'＋ 画像・PDFを追加';
+  anaBtn.disabled=_aiStaged.length===0;
+  anaBtn.style.cssText='width:100%;padding:13px;border:none;border-radius:var(--r);font-size:13px;font-weight:700;font-family:\'Noto Sans JP\',sans-serif;'
+    +(_aiStaged.length>0?'background:var(--fa);color:#fff;cursor:pointer;':'background:#ccc;color:#fff;cursor:not-allowed;');
+}
 
+async function aiStageFile(input){
+  const file=input.files[0];
+  input.value='';
+  if(!file)return;
+  if(_aiStaged.length>=5){showToast('最大5枚まで');return;}
+  let b64,mimeType,thumb='';
+  if(file.type==='application/pdf'){
+    const dataUrl=await new Promise(resolve=>{const r=new FileReader();r.onload=e=>resolve(e.target.result);r.readAsDataURL(file);});
+    b64=dataUrl.split(',')[1];mimeType='application/pdf';
+  }else{
+    const b64full=await compressImage(file,1600,0.85);
+    b64=b64full.split(',')[1];mimeType='image/jpeg';thumb=b64full;
+  }
+  _aiStaged.push({b64,mimeType,filename:file.name,thumb});
+  renderAiStage();
+}
+
+async function aiAnalyze(){
+  if(!_aiStaged.length)return;
+  const anaBtn=document.getElementById('ai-analyze-btn');
+  anaBtn.disabled=true;anaBtn.textContent='⏳ 解析中...';
+  document.getElementById('ai-add-btn').disabled=true;
+
+  const images=_aiStaged;
   const aiResult=await gasPostRaw({action:'analyzeImage',images:images.map(i=>({base64:i.b64,mimeType:i.mimeType,filename:i.filename}))});
-  btn.disabled=false;btn.textContent='📸 AI';
+
+  anaBtn.disabled=false;anaBtn.textContent='🤖 AI解析';
+  document.getElementById('ai-add-btn').disabled=false;
 
   if(!aiResult||!aiResult.ok){
     showToast('❌ AI失敗: '+(aiResult&&aiResult.error?aiResult.error:'接続エラー'));return;
@@ -962,7 +1016,6 @@ async function handleAiFile(input){
     else{const objM=aiResult.text.match(/\{[\s\S]*\}/);if(!objM)throw new Error();events=[JSON.parse(objM[0])];}
   }catch(e){showToast('❌ 解析失敗');console.error(aiResult.text);return;}
 
-  // 最初の画像をDriveにアップロード
   let firstImgUrl='';
   const firstImg=images.find(i=>i.mimeType!=='application/pdf');
   if(firstImg){
@@ -972,6 +1025,7 @@ async function handleAiFile(input){
     else{console.error('uploadImage failed:',imgRes);}
   }
 
+  closeAiStage();
   if(events.length===1){
     fillFormFromAi(events[0],firstImgUrl);
     showToast('✅ AI読み込み完了');
