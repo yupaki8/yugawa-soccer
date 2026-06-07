@@ -625,7 +625,11 @@ function openNew(){
   setFmColor(t);selType('of');
   document.getElementById('fm').classList.add('open');
 }
-function closeFm(){document.getElementById('fm').classList.remove('open');}
+function closeFm(){
+  document.getElementById('fm').classList.remove('open');
+  const aim=document.getElementById('ai-modal');
+  if(aim.classList.contains('open'))aim.style.display='';
+}
 
 function setFmColor(t){
   ['f-ttl','f-dt','f-ga','f-gv','f-dismiss','f-ve','f-vemap','f-gl','f-opponents','f-fee','f-mo','f-cat'].forEach(id=>{
@@ -978,7 +982,8 @@ function showAiResults(events,imgUrl){
       '<button data-idx="'+i+'" style="margin-top:8px;width:100%;padding:8px;border:none;border-radius:8px;background:var(--'+t+');color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Noto Sans JP\',sans-serif">📝 フォームを開く</button>';
     card.querySelector('button').addEventListener('click',function(){
       const idx=parseInt(this.dataset.idx);
-      closeAiModal();
+      this.disabled=true;this.textContent='✅ フォームを開いています...';
+      document.getElementById('ai-modal').style.display='none';
       fillFormFromAi(window._aiEvs[idx],idx===0?window._aiImgUrl:'');
       showToast('✅ フォームに入力しました');
     });
