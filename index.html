@@ -488,11 +488,19 @@ async function gasPost(payload){
   return d!==null&&d.ok===true;
 }
 
+function normDate(s){
+  if(!s) return '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d=new Date(s);
+  if(isNaN(d.getTime())) return s;
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function normEvs(arr){ return arr.map(e=>Object.assign({},e,{date:normDate(e.date)})); }
 function saveCache(){
   try{localStorage.setItem('yfa_evs_cache',JSON.stringify(evs));}catch(e){}
 }
 function loadCache(){
-  try{const c=localStorage.getItem('yfa_evs_cache');if(c){evs=JSON.parse(c);}}catch(e){}
+  try{const c=localStorage.getItem('yfa_evs_cache');if(c){evs=normEvs(JSON.parse(c));}}catch(e){}
 }
 
 async function syncAll(){
@@ -506,7 +514,7 @@ async function syncAll(){
     updCnts();renderCal();renderList();
     return;
   }
-  evs=incoming;
+  evs=normEvs(incoming);
   notices = Array.isArray(notData) ? notData : [];
   saveCache();
   const now=new Date();
