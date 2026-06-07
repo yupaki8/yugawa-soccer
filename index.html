@@ -938,7 +938,9 @@ async function handleAiFile(input){
       document.getElementById('img-area-txt').textContent='✅ AI読み込み済み';
       showToast('✅ 画像アップロード完了');
     }else{
-      showToast('⚠️ 画像アップロード失敗（手動で添付可）');
+      const reason=imgResult?(imgResult.error||'ok=false'):'null（通信エラー）';
+      console.error('uploadImage failed:',imgResult);
+      showToast('⚠️ 画像失敗: '+reason,5000);
     }
   }
 }
