@@ -605,7 +605,15 @@ function renderList(){
   const con=document.getElementById('elist');con.innerHTML='';
   const month=evs.filter(e=>e.team===team&&e.date&&(()=>{const d=new Date(e.date+'T00:00:00');return d.getFullYear()===cy&&d.getMonth()===cm;})()).sort((a,b)=>a.date.localeCompare(b.date));
   const info=TI[team];
-  if(!month.length){con.innerHTML='<div class="sl">'+cy+'年'+MN[cm]+'の試合</div><div class="empty-st"><div class="ei">'+info.i+'</div><div>'+info.n+'の試合はまだありません</div></div>';return;}
+  if(!month.length){
+    const otherTeam=team==='fa'?'chu':'fa';
+    const otherCount=evs.filter(e=>e.team===otherTeam&&e.date&&(()=>{const d=new Date(e.date+'T00:00:00');return d.getFullYear()===cy&&d.getMonth()===cm;})()).length;
+    const allOther=evs.filter(e=>e.team===otherTeam).length;
+    const hint=otherCount>0?'<div style="margin-top:8px;font-size:11px;color:var(--muted);">'+TI[otherTeam].n+'に'+otherCount+'件あります</div>'
+      :allOther>0?'<div style="margin-top:8px;font-size:11px;color:var(--muted);">'+TI[otherTeam].n+'に別の月で'+allOther+'件あります</div>':'';
+    con.innerHTML='<div class="sl">'+cy+'年'+MN[cm]+'の試合</div><div class="empty-st"><div class="ei">'+info.i+'</div><div>'+info.n+'の試合はまだありません</div>'+hint+'</div>';
+    return;
+  }
   const sec=document.createElement('div');sec.innerHTML='<div class="sl">'+info.n+'｜'+cy+'年'+MN[cm]+'（'+month.length+'件）</div>';con.appendChild(sec);
   month.forEach(e=>{
     const d=new Date(e.date+'T00:00:00'),tp=e.type||'of';
