@@ -86,21 +86,23 @@ function doPost(e) {
     var apiKey = PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY');
     if (!apiKey) return json({ ok: false, error: 'CLAUDE_API_KEY が未設定です（スクリプトプロパティを確認）' });
 
-    var systemPrompt = 'あなたは試合案内から情報を抽出するAIです。\n画像・PDFを読み取り、以下のキーを使ったJSONのみを出力してください（説明文・コードブロック等は不要）。\n\nキー:\n- team: "fa"（湯川FA、U10〜U12）or "chu"（湯川中学校、U15）\n- type: "of"（公式戦）/ "tr"（練習試合・TRM）/ "ot"（その他）\n- cat: "U10" / "U11" / "U12" / "U15" / "その他"\n- date: "YYYY-MM-DD"\n- ttl: タイトル・大会名\n- ga: "HH:MM"（クラブハウス集合時刻）\n- gv: "HH:MM"（会場集合時刻）\n- dismiss: "HH:MM"（解散予定）\n- ve: 会場名\n- gl: 集合場所\n- matches: 試合リスト（配列）。例: [{"opp":"vs 中間FC","ko":"10:00"},{"opp":"vs レプロFC","ko":"13:00"}]。KO時刻不明なら ko を省略。\n- fee: 参加費・交通費\n- mo: 持ち物・メモ\n\n読み取れない項目はキーごと省略。teamが不明なら"fa"。JSONのみ出力。';
+    var systemPrompt = 'あなたは試合案内から情報を抽出するAIです。\n画像・PDFを読み取り、以下のキーを使ったJSONの配列を出力してください（説明文・コードブロック等は不要）。\n1件でも必ず [{...}] の配列形式にすること。複数の日程が含まれる場合は複数オブジェクトの配列にすること。\n\n各オブジェクトのキー:\n- team: "fa"（湯川FA、U10〜U12）or "chu"（湯川中学校、U15）\n- type: "of"（公式戦）/ "tr"（練習試合・TRM）/ "ot"（その他）\n- cat: "U10" / "U11" / "U12" / "U15" / "その他"\n- date: "YYYY-MM-DD"\n- ttl: タイトル・大会名\n- ga: "HH:MM"（クラブハウス集合時刻）\n- gv: "HH:MM"（会場集合時刻）\n- dismiss: "HH:MM"（解散予定）\n- ve: 会場名\n- gl: 集合場所\n- matches: 試合リスト（配列）。例: [{"opp":"vs 中間FC","ko":"10:00"}]。KO時刻不明なら ko を省略。\n- fee: 参加費・交通費\n- mo: 持ち物・メモ\n\n読み取れない項目はキーごと省略。teamが不明なら"fa"。JSON配列のみ出力。';
 
-    var mediaType = payload.mimeType || 'image/jpeg';
-    var imageSource = { type: 'base64', media_type: mediaType, data: payload.base64 };
-    var contentType = mediaType === 'application/pdf' ? 'document' : 'image';
+    var contentItems = [];
+    if (payload.images && payload.images.length) {
+      payload.images.forEach(function(img) {
+        var ct = img.mimeType === 'application/pdf' ? 'document' : 'image';
+        contentItems.push({ type: ct, source: { type: 'base64', media_type: img.mimeType || 'image/jpeg', data: img.base64 } });
+      });
+    } else {
+      var mediaType = payload.mimeType || 'image/jpeg';
+      var ct = mediaType === 'application/pdf' ? 'document' : 'image';
+      contentItems.push({ type: ct, source: { type: 'base64', media_type: mediaType, data: payload.base64 } });
+    }
+    contentItems.push({ type: 'text', text: '上記の画像・PDFすべてから試合情報を読み取り、JSON配列で出力してください。' });
 
-    var messages = [{
-      role: 'user',
-      content: [
-        { type: contentType, source: imageSource },
-        { type: 'text', text: '上記から試合情報を読み取り、JSONで出力してください。' }
-      ]
-    }];
-
-    var reqBody = { model: 'claude-haiku-4-5-20251001', max_tokens: 1024, system: systemPrompt, messages: messages };
+    var messages = [{ role: 'user', content: contentItems }];
+    var reqBody = { model: 'claude-haiku-4-5-20251001', max_tokens: 2048, system: systemPrompt, messages: messages };
     var opts = {
       method: 'post',
       headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },

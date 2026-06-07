@@ -429,7 +429,19 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
-<input type="file" id="ai-file-input" accept="image/*,application/pdf" style="display:none" onchange="handleAiFile(this)">
+<input type="file" id="ai-file-input" accept="image/*,application/pdf" multiple style="display:none" onchange="handleAiFile(this)">
+<!-- AI結果モーダル -->
+<div class="mbg" id="ai-modal">
+  <div class="modal">
+    <div class="mh"></div>
+    <div class="mhdr">
+      <div class="mtitle">📸 AI読み込み結果</div>
+      <button class="mclose" onclick="closeAiModal()">&#10005;</button>
+    </div>
+    <div class="mbody" id="ai-modal-body"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -873,77 +885,108 @@ function addResultRow(opp,ko,us,th,scorers,t){
 
 // ===== ユーティリティ =====
 function showToast(msg,ms){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),ms||2800);}
-['fm','dm','nm'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('open');});});
+['fm','dm','nm','ai-modal'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('open');});});
 
 // ===== AI読み込み =====
 function aiImport(){document.getElementById('ai-file-input').click();}
 
 async function handleAiFile(input){
-  const file=input.files[0];if(!file)return;
+  const files=Array.from(input.files);
+  if(!files.length)return;
   input.value='';
+  if(files.length>5){showToast('画像は最大5枚まで');return;}
   const btn=document.getElementById('ai-btn');
   btn.disabled=true;btn.textContent='⏳ AI';
   showToast('🤖 AI読み込み中...',30000);
 
-  let b64,mimeType;
-  if(file.type==='application/pdf'){
-    const dataUrl=await new Promise(resolve=>{const r=new FileReader();r.onload=e=>resolve(e.target.result);r.readAsDataURL(file);});
-    b64=dataUrl.split(',')[1];mimeType='application/pdf';
-  }else{
-    const b64full=await compressImage(file,1600,0.85);
-    b64=b64full.split(',')[1];mimeType='image/jpeg';
+  const images=[];
+  for(const file of files){
+    let b64,mimeType;
+    if(file.type==='application/pdf'){
+      const dataUrl=await new Promise(resolve=>{const r=new FileReader();r.onload=e=>resolve(e.target.result);r.readAsDataURL(file);});
+      b64=dataUrl.split(',')[1];mimeType='application/pdf';
+    }else{
+      const b64full=await compressImage(file,1600,0.85);
+      b64=b64full.split(',')[1];mimeType='image/jpeg';
+    }
+    images.push({b64,mimeType,filename:file.name});
   }
 
-  const aiResult=await gasPostRaw({action:'analyzeImage',base64:b64,mimeType,filename:file.name});
+  const aiResult=await gasPostRaw({action:'analyzeImage',images:images.map(i=>({base64:i.b64,mimeType:i.mimeType,filename:i.filename}))});
   btn.disabled=false;btn.textContent='📸 AI';
 
   if(!aiResult||!aiResult.ok){
     showToast('❌ AI失敗: '+(aiResult&&aiResult.error?aiResult.error:'接続エラー'));return;
   }
 
-  let data;
+  let events;
   try{
-    const m=aiResult.text.match(/\{[\s\S]*\}/);
-    if(!m)throw new Error('no json');
-    data=JSON.parse(m[0]);
+    const arrM=aiResult.text.match(/\[[\s\S]*\]/);
+    if(arrM){events=JSON.parse(arrM[0]);if(!Array.isArray(events))events=[events];}
+    else{const objM=aiResult.text.match(/\{[\s\S]*\}/);if(!objM)throw new Error();events=[JSON.parse(objM[0])];}
   }catch(e){showToast('❌ 解析失敗');console.error(aiResult.text);return;}
 
+  // 最初の画像をDriveにアップロード
+  let firstImgUrl='';
+  const firstImg=images.find(i=>i.mimeType!=='application/pdf');
+  if(firstImg){
+    showToast('✅ AI完了 — 画像アップロード中...',10000);
+    const imgRes=await gasPostRaw({action:'uploadImage',filename:firstImg.filename||'image.jpg',mimeType:'image/jpeg',base64:firstImg.b64});
+    if(imgRes&&imgRes.ok&&imgRes.url){firstImgUrl=imgRes.url;}
+    else{console.error('uploadImage failed:',imgRes);}
+  }
+
+  if(events.length===1){
+    fillFormFromAi(events[0],firstImgUrl);
+    showToast('✅ AI読み込み完了');
+  }else{
+    showAiResults(events,firstImgUrl);
+  }
+}
+
+function fillFormFromAi(data,imgUrl){
   if(data.team&&data.team!==team)switchTeam(data.team);
   openNew();
   if(data.type)selType(data.type);
-
-  const fieldMap={cat:'f-cat',date:'f-dt',ttl:'f-ttl',ga:'f-ga',gv:'f-gv',dismiss:'f-dismiss',ve:'f-ve',gl:'f-gl',fee:'f-fee',mo:'f-mo'};
-  Object.entries(fieldMap).forEach(([k,id])=>{if(data[k]!==undefined&&data[k]!=='')document.getElementById(id).value=data[k];});
-
-  // 会場名からGoogleマップURL生成
-  if(data.ve){
-    document.getElementById('f-vemap').value='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(data.ve);
-  }
-
-  // 試合リストから結果行と対戦相手テキストを生成
+  const fm={cat:'f-cat',date:'f-dt',ttl:'f-ttl',ga:'f-ga',gv:'f-gv',dismiss:'f-dismiss',ve:'f-ve',gl:'f-gl',fee:'f-fee',mo:'f-mo'};
+  Object.entries(fm).forEach(([k,id])=>{if(data[k]!==undefined&&data[k]!=='')document.getElementById(id).value=data[k];});
+  if(data.ve)document.getElementById('f-vemap').value='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(data.ve);
   if(data.matches&&data.matches.length){
     document.getElementById('f-opponents').value=data.matches.map(m=>m.opp||'').filter(Boolean).join('\n');
     data.matches.forEach(m=>addResultRow(m.opp||'',m.ko||'','','','',team));
   }
-
-  showToast('✅ AI完了 — 画像アップロード中...',10000);
-
-  // 元画像をDriveに添付（AI完了後に実行）
-  if(mimeType!=='application/pdf'){
-    const imgResult=await gasPostRaw({action:'uploadImage',filename:file.name||'image.jpg',mimeType:'image/jpeg',base64:b64});
-    if(imgResult&&imgResult.ok&&imgResult.url){
-      document.getElementById('f-imgurl').value=imgResult.url;
-      const prev=document.getElementById('img-preview');
-      prev.src=imgResult.url;prev.style.display='block';
-      document.getElementById('img-area-txt').textContent='✅ AI読み込み済み';
-      showToast('✅ 画像アップロード完了');
-    }else{
-      const reason=imgResult?(imgResult.error||'ok=false'):'null（通信エラー）';
-      console.error('uploadImage failed:',imgResult);
-      showToast('⚠️ 画像失敗: '+reason,5000);
-    }
+  if(imgUrl){
+    document.getElementById('f-imgurl').value=imgUrl;
+    const prev=document.getElementById('img-preview');
+    prev.src=imgUrl;prev.style.display='block';
+    document.getElementById('img-area-txt').textContent='✅ AI読み込み済み';
   }
 }
+
+function showAiResults(events,imgUrl){
+  window._aiEvs=events;window._aiImgUrl=imgUrl;
+  const body=document.getElementById('ai-modal-body');body.innerHTML='';
+  events.forEach((ev,i)=>{
+    const t=ev.team||team;
+    const card=document.createElement('div');
+    card.style.cssText='background:var(--bg);border-radius:9px;padding:12px;margin-bottom:10px;';
+    card.innerHTML=
+      '<div style="font-size:12px;font-weight:700;color:var(--'+t+');margin-bottom:3px">'+(ev.date||'日付不明')+' '+TI[t].i+' '+t.toUpperCase()+'</div>'+
+      '<div style="font-size:13px;font-weight:700;margin-bottom:4px">'+(ev.ttl||'（タイトルなし）')+'</div>'+
+      (ev.ve?'<div style="font-size:11px;color:var(--muted)">📍 '+ev.ve+'</div>':'')+
+      (ev.matches&&ev.matches.length?'<div style="font-size:11px;color:var(--muted)">⚽ '+ev.matches.length+'試合</div>':'')+
+      '<button data-idx="'+i+'" style="margin-top:8px;width:100%;padding:8px;border:none;border-radius:8px;background:var(--'+t+');color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Noto Sans JP\',sans-serif">📝 フォームを開く</button>';
+    card.querySelector('button').addEventListener('click',function(){
+      const idx=parseInt(this.dataset.idx);
+      closeAiModal();
+      fillFormFromAi(window._aiEvs[idx],idx===0?window._aiImgUrl:'');
+      showToast('✅ フォームに入力しました');
+    });
+    body.appendChild(card);
+  });
+  document.getElementById('ai-modal').classList.add('open');
+}
+function closeAiModal(){document.getElementById('ai-modal').classList.remove('open');}
 
 // ===== URLパラメータから試合登録フォームを自動入力 =====
 function loadFromParams(){
