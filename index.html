@@ -323,7 +323,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           </select>
         </div>
         <div class="fg"><label class="fl">日付</label>
-          <input class="fi fa" id="f-dt" type="date">
+          <input class="fi fa" id="f-dt" type="text" placeholder="例: 2026-06-28" maxlength="10">
         </div>
       </div>
       <div class="fr">
@@ -390,7 +390,8 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 
 <script>
 // ===== 設定 =====
-let GAS_URL = localStorage.getItem('yfa_gas_url') || '';
+const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbz4chTvxYiGLpuwVer8LFSTV1WxqQ_sx4I0D45crz38_pdV383pK5rg6w4pEGsUN0htBQ/exec';
+let GAS_URL = localStorage.getItem('yfa_gas_url') || GAS_URL_DEFAULT;
 
 // ===== データ（ローカルキャッシュ） =====
 let evs=[], notices=[], team='fa', tab='cal';
@@ -581,7 +582,8 @@ function selType(tp){
 
 async function saveEv(){
   const ttl=document.getElementById('f-ttl').value.trim(),dt=document.getElementById('f-dt').value;
-  if(!ttl||!dt){showToast('タイトルと日付は必須です');return;}
+  const dateOk=/^\d{4}-\d{2}-\d{2}$/.test(dt);
+  if(!ttl||!dt||!dateOk){showToast('タイトルと日付（YYYY-MM-DD形式）は必須です');return;}
   const btn=document.getElementById('sav-btn');btn.disabled=true;
   document.getElementById('sav-txt').innerHTML='<span class="spin"></span> 保存中...';
   const ev={id:eid||gid(),team,type:selType_v,ttl,date:dt,
