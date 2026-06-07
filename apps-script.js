@@ -82,6 +82,41 @@ function doPost(e) {
     return json({ ok: true, url: 'https://drive.google.com/uc?export=view&id=' + file.getId() });
   }
 
+  if (action === 'analyzeImage') {
+    var apiKey = PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY');
+    if (!apiKey) return json({ ok: false, error: 'CLAUDE_API_KEY が未設定です（スクリプトプロパティを確認）' });
+
+    var systemPrompt = 'あなたは試合案内から情報を抽出するAIです。\n画像・PDFを読み取り、以下のキーを使ったJSONのみを出力してください（説明文・コードブロック等は不要）。\n\nキー:\n- team: "fa"（湯川FA、U10〜U12）or "chu"（湯川中学校、U15）\n- type: "of"（公式戦）/ "tr"（練習試合・TRM）/ "ot"（その他）\n- cat: "U10" / "U11" / "U12" / "U15" / "その他"\n- date: "YYYY-MM-DD"\n- ttl: タイトル・大会名\n- ga: "HH:MM"（クラブハウス集合時刻）\n- gv: "HH:MM"（会場集合時刻）\n- dismiss: "HH:MM"（解散予定）\n- ve: 会場名\n- gl: 集合場所\n- opponents: 対戦相手（複数なら改行区切り）\n- fee: 参加費・交通費\n- mo: 持ち物・メモ\n\n読み取れない項目はキーごと省略。teamが不明なら"fa"。JSONのみ出力。';
+
+    var mediaType = payload.mimeType || 'image/jpeg';
+    var imageSource = { type: 'base64', media_type: mediaType, data: payload.base64 };
+    var contentType = mediaType === 'application/pdf' ? 'document' : 'image';
+
+    var messages = [{
+      role: 'user',
+      content: [
+        { type: contentType, source: imageSource },
+        { type: 'text', text: '上記から試合情報を読み取り、JSONで出力してください。' }
+      ]
+    }];
+
+    var reqBody = { model: 'claude-haiku-4-5-20251001', max_tokens: 1024, system: systemPrompt, messages: messages };
+    var opts = {
+      method: 'post',
+      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      payload: JSON.stringify(reqBody),
+      muteHttpExceptions: true
+    };
+
+    var resp = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', opts);
+    var parsed = JSON.parse(resp.getContentText());
+    if (parsed.content && parsed.content[0] && parsed.content[0].type === 'text') {
+      return json({ ok: true, text: parsed.content[0].text });
+    }
+    var errMsg = parsed.error ? parsed.error.message : '不明なエラー';
+    return json({ ok: false, error: errMsg });
+  }
+
   if (action === 'delete') {
     var ws2 = ss.getSheetByName(sheetName);
     if (!ws2) return json({ ok: false });

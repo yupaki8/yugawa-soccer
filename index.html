@@ -200,6 +200,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
   </div>
   <div class="hdr-btns">
     <button class="hb hb-s" onclick="showTab('settings')">⚙</button>
+    <button class="hb hb-s" onclick="aiImport()" id="ai-btn" title="AI読み込み">📸 AI</button>
     <button class="hb hb-p" onclick="openNew()">＋ 登録</button>
   </div>
 </div>
@@ -288,6 +289,20 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <li>アクセスできるユーザー：「全員」に設定してデプロイ</li>
         <li>表示されたURLをこの画面の入力欄に貼り付けて保存</li>
       </ol>
+    </div>
+    <div class="set-card">
+      <div class="set-title">🤖 AI読み込み設定（📸 AIボタン）</div>
+      <div class="set-hint" style="line-height:1.9">
+        試合案内の画像から自動でフォームを入力する機能です。<br>
+        利用するには Apps Script のスクリプトプロパティに Claude API キーを設定してください。
+        <ol class="steps" style="margin-top:8px">
+          <li>Apps Script エディタを開く</li>
+          <li>左メニュー「プロジェクトの設定」→「スクリプト プロパティ」</li>
+          <li>プロパティ名: <code>CLAUDE_API_KEY</code>　値: Anthropic APIキー</li>
+          <li>Apps Script を再デプロイ（新しいデプロイ）</li>
+        </ol>
+        APIキーは <code>console.anthropic.com</code> → API Keys で取得。
+      </div>
     </div>
     <div class="set-card">
       <div class="set-title">📤 メンバーへの共有方法</div>
@@ -413,6 +428,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
+<input type="file" id="ai-file-input" accept="image/*,application/pdf" style="display:none" onchange="handleAiFile(this)">
 <div class="toast" id="toast"></div>
 
 <script>
@@ -854,8 +870,50 @@ function addResultRow(opp,us,th,scorers,t){
 }
 
 // ===== ユーティリティ =====
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
+function showToast(msg,ms){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),ms||2800);}
 ['fm','dm','nm'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('open');});});
+
+// ===== AI読み込み =====
+function aiImport(){document.getElementById('ai-file-input').click();}
+
+async function handleAiFile(input){
+  const file=input.files[0];if(!file)return;
+  input.value='';
+  const btn=document.getElementById('ai-btn');
+  btn.disabled=true;btn.textContent='⏳ AI';
+  showToast('🤖 AI読み込み中...',30000);
+
+  let b64,mimeType;
+  if(file.type==='application/pdf'){
+    const dataUrl=await new Promise(resolve=>{const r=new FileReader();r.onload=e=>resolve(e.target.result);r.readAsDataURL(file);});
+    b64=dataUrl.split(',')[1];mimeType='application/pdf';
+  }else{
+    const b64full=await compressImage(file,1600,0.85);
+    b64=b64full.split(',')[1];mimeType='image/jpeg';
+  }
+
+  const result=await gasPostRaw({action:'analyzeImage',base64:b64,mimeType,filename:file.name});
+  btn.disabled=false;btn.textContent='📸 AI';
+
+  if(!result||!result.ok){
+    showToast('❌ AI失敗: '+(result&&result.error?result.error:'接続エラー'));return;
+  }
+
+  let data;
+  try{
+    const text=result.text;
+    const m=text.match(/\{[\s\S]*\}/);
+    if(!m)throw new Error('no json');
+    data=JSON.parse(m[0]);
+  }catch(e){showToast('❌ 解析失敗');console.error(result.text);return;}
+
+  if(data.team&&data.team!==team)switchTeam(data.team);
+  openNew();
+  if(data.type)selType(data.type);
+  const fieldMap={cat:'f-cat',date:'f-dt',ttl:'f-ttl',ga:'f-ga',gv:'f-gv',dismiss:'f-dismiss',ve:'f-ve',gl:'f-gl',opponents:'f-opponents',fee:'f-fee',mo:'f-mo'};
+  Object.entries(fieldMap).forEach(([k,id])=>{if(data[k]!==undefined&&data[k]!=='')document.getElementById(id).value=data[k];});
+  showToast('✅ AI読み込み完了');
+}
 
 // ===== URLパラメータから試合登録フォームを自動入力 =====
 function loadFromParams(){
