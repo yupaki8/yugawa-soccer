@@ -488,6 +488,13 @@ async function gasPost(payload){
   return d!==null&&d.ok===true;
 }
 
+function saveCache(){
+  try{localStorage.setItem('yfa_evs_cache',JSON.stringify(evs));}catch(e){}
+}
+function loadCache(){
+  try{const c=localStorage.getItem('yfa_evs_cache');if(c){evs=JSON.parse(c);}}catch(e){}
+}
+
 async function syncAll(){
   if(!GAS_URL){ setSyncStatus('err','Apps Script URLが未設定です'); return; }
   setSyncStatus('ing','同期中...');
@@ -495,8 +502,9 @@ async function syncAll(){
   if(evData===null){ setSyncStatus('err','接続失敗 — URLを確認してください'); return; }
   evs = Array.isArray(evData) ? evData : [];
   notices = Array.isArray(notData) ? notData : [];
+  saveCache();
   const now=new Date();
-  setSyncStatus('ok', (now.getMonth()+1)+'月'+now.getDate()+'日 '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0')+'に同期');
+  setSyncStatus('ok', (now.getMonth()+1)+'月'+now.getDate()+'日 '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0')+'に同期（'+evs.length+'件）');
   updCnts(); renderCal(); renderList();
   if(tab==='stats') renderStats();
   if(tab==='notice') renderNotices();
@@ -673,6 +681,7 @@ async function saveEv(){
   const ok=await gasPost({action:'save',sheet:'events',data:ev});
   if(ok){
     if(eid){const i=evs.findIndex(e=>e.id===eid);if(i>=0)evs[i]=ev;}else{evs.push(ev);}
+    saveCache();
     showToast('✅ 保存しました');
   } else {
     showToast(GAS_URL?'❌ 保存失敗（URLを確認）':'❌ Apps Script URLが未設定');
@@ -746,7 +755,7 @@ function openEdit(id){
 async function delEv(id){
   if(!confirm('この試合を削除しますか？'))return;
   const ok=await gasPost({action:'delete',sheet:'events',id});
-  if(ok){ evs=evs.filter(e=>e.id!==id); showToast('削除しました'); }
+  if(ok){ evs=evs.filter(e=>e.id!==id); saveCache(); showToast('削除しました'); }
   else { showToast(GAS_URL?'❌ 削除失敗':'❌ URLが未設定'); }
   updCnts();closeDm();renderCal();renderList();
 }
@@ -1010,9 +1019,10 @@ function loadFromParams(){
 }
 
 // ===== 初期化 =====
+loadCache();
+updCnts();renderCal();renderList();
 if(GAS_URL){ document.getElementById('gas-url').value=GAS_URL; syncAll(); }
 else { setSyncStatus('err','設定タブでApps Script URLを入力してください'); }
-updCnts();renderCal();renderList();
 loadFromParams();
 </script>
 </body>
