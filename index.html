@@ -789,10 +789,27 @@ function addResultRow(opp,us,th,scorers,t){
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 ['fm','dm','nm'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('open');});});
 
+// ===== URLパラメータから試合登録フォームを自動入力 =====
+function loadFromParams(){
+  const p=new URLSearchParams(window.location.search);
+  if(p.get('new')!=='1')return;
+  const t=p.get('team')||'fa';
+  if(t!==team)switchTeam(t);
+  openNew();
+  const tp=p.get('type');if(tp)selType(tp);
+  if(p.get('cat'))document.getElementById('f-cat').value=p.get('cat');
+  if(p.get('date'))document.getElementById('f-dt').value=p.get('date');
+  ['ttl','ga','gv','dismiss','ve','vemap','gl','opponents','fee','mo'].forEach(k=>{
+    const v=p.get(k);if(v!==null&&v!=='')document.getElementById('f-'+k).value=v;
+  });
+  window.history.replaceState({},'',window.location.pathname);
+}
+
 // ===== 初期化 =====
 if(GAS_URL){ document.getElementById('gas-url').value=GAS_URL; syncAll(); }
 else { setSyncStatus('err','設定タブでApps Script URLを入力してください'); }
 updCnts();renderCal();renderList();
+loadFromParams();
 </script>
 </body>
 </html>
