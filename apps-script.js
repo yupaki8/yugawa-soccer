@@ -86,7 +86,7 @@ function doPost(e) {
     var apiKey = PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY');
     if (!apiKey) return json({ ok: false, error: 'CLAUDE_API_KEY が未設定です（スクリプトプロパティを確認）' });
 
-    var systemPrompt = 'あなたは試合案内から情報を抽出するAIです。\n画像・PDFを読み取り、以下のキーを使ったJSONのみを出力してください（説明文・コードブロック等は不要）。\n\nキー:\n- team: "fa"（湯川FA、U10〜U12）or "chu"（湯川中学校、U15）\n- type: "of"（公式戦）/ "tr"（練習試合・TRM）/ "ot"（その他）\n- cat: "U10" / "U11" / "U12" / "U15" / "その他"\n- date: "YYYY-MM-DD"\n- ttl: タイトル・大会名\n- ga: "HH:MM"（クラブハウス集合時刻）\n- gv: "HH:MM"（会場集合時刻）\n- dismiss: "HH:MM"（解散予定）\n- ve: 会場名\n- gl: 集合場所\n- opponents: 対戦相手（複数なら改行区切り）\n- fee: 参加費・交通費\n- mo: 持ち物・メモ\n\n読み取れない項目はキーごと省略。teamが不明なら"fa"。JSONのみ出力。';
+    var systemPrompt = 'あなたは試合案内から情報を抽出するAIです。\n画像・PDFを読み取り、以下のキーを使ったJSONのみを出力してください（説明文・コードブロック等は不要）。\n\nキー:\n- team: "fa"（湯川FA、U10〜U12）or "chu"（湯川中学校、U15）\n- type: "of"（公式戦）/ "tr"（練習試合・TRM）/ "ot"（その他）\n- cat: "U10" / "U11" / "U12" / "U15" / "その他"\n- date: "YYYY-MM-DD"\n- ttl: タイトル・大会名\n- ga: "HH:MM"（クラブハウス集合時刻）\n- gv: "HH:MM"（会場集合時刻）\n- dismiss: "HH:MM"（解散予定）\n- ve: 会場名\n- gl: 集合場所\n- matches: 試合リスト（配列）。例: [{"opp":"vs 中間FC","ko":"10:00"},{"opp":"vs レプロFC","ko":"13:00"}]。KO時刻不明なら ko を省略。\n- fee: 参加費・交通費\n- mo: 持ち物・メモ\n\n読み取れない項目はキーごと省略。teamが不明なら"fa"。JSONのみ出力。';
 
     var mediaType = payload.mimeType || 'image/jpeg';
     var imageSource = { type: 'base64', media_type: mediaType, data: payload.base64 };
