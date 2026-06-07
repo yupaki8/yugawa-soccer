@@ -177,6 +177,12 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 @keyframes sp{to{transform:rotate(360deg)}}
 .toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:8px 16px;border-radius:20px;font-size:12px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200;white-space:nowrap;}
 .toast.show{opacity:1;}
+.rrow{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.rrow .r-opp{flex:1;}
+.rrow .r-sc{width:44px;text-align:center;}
+.r-rm{background:none;border:none;color:var(--lose);cursor:pointer;font-size:18px;line-height:1;padding:0 4px;flex-shrink:0;}
+.radd{width:100%;background:none;border:1.5px dashed var(--border);border-radius:9px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;}
+.radd.fa:hover{border-color:var(--fa);color:var(--fa);}.radd.chu:hover{border-color:var(--chu);color:var(--chu);}
 </style>
 </head>
 <body>
@@ -327,12 +333,15 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         </div>
       </div>
       <div class="fr">
-        <div class="fg"><label class="fl">集合時間</label><input class="fi fa" id="f-ga" type="time"></div>
-        <div class="fg"><label class="fl">キックオフ</label><input class="fi fa" id="f-ko" type="time"></div>
+        <div class="fg"><label class="fl">集合（クラブハウス）</label><input class="fi fa" id="f-ga" type="time"></div>
+        <div class="fg"><label class="fl">集合（会場）</label><input class="fi fa" id="f-gv" type="time"></div>
       </div>
       <div class="fg"><label class="fl">解散予定時刻</label><input class="fi fa" id="f-dismiss" type="time"></div>
       <div class="fg"><label class="fl">会場</label>
         <input class="fi fa" id="f-ve" placeholder="例：到津の森公園グラウンド">
+      </div>
+      <div class="fg"><label class="fl">Google マップ URL</label>
+        <input class="fi fa" id="f-vemap" type="url" placeholder="https://maps.google.com/...">
       </div>
       <div class="fg"><label class="fl">集合場所</label>
         <input class="fi fa" id="f-gl" placeholder="例：学校正門前">
@@ -343,12 +352,9 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <div class="fg"><label class="fl">参加費・交通費</label>
         <input class="fi fa" id="f-fee" placeholder="例：参加費1,000円 / 交通費700円">
       </div>
-      <div class="fg"><label class="fl">スコア（試合後に入力）</label>
-        <div class="sr">
-          <input class="fi fa" id="f-us" type="number" min="0" placeholder="自" style="text-align:center">
-          <div class="ss">-</div>
-          <input class="fi fa" id="f-th" type="number" min="0" placeholder="相" style="text-align:center">
-        </div>
+      <div class="fg"><label class="fl">試合結果（試合毎に追加）</label>
+        <div id="results-list"></div>
+        <button class="radd fa" id="radd-btn" type="button" onclick="addResultRow()">＋ 試合を追加</button>
       </div>
       <div class="fg"><label class="fl">持ち物・メモ</label>
         <textarea class="fta fa" id="f-mo" placeholder="例：弁当・水筒・すね当て&#10;相手：八幡中央FC"></textarea>
@@ -548,11 +554,13 @@ function renderList(){
     const tpL={of:'公式戦',tr:'TRM',ot:'その他'}[tp];
     const bCls=tp==='of'?'b'+(team==='fa'?'fa':'ch')+'o':tp==='tr'?'btrm':'both';
     const dcCls=team+(tp==='of'?'of':tp==='tr'?'tr':'ot');
-    const us=parseInt(e.us),th=parseInt(e.th);
-    const res=(!isNaN(us)&&!isNaN(th))?(us>th?'win':us<th?'lose':'draw'):null;
+    const evResults=e.results?JSON.parse(e.results):[];
+    const scored=evResults.filter(r=>r.us!==''&&r.th!==''&&!isNaN(parseInt(r.us))&&!isNaN(parseInt(r.th)));
     const card=document.createElement('div');card.className='ec e'+team;card.dataset.date=e.date;
-    let sc='';if(res){const rl={win:'勝',lose:'負',draw:'分'};sc='<div class="escore"><div class="sv '+res+'">'+us+'-'+th+'</div><div class="sl2 '+res+'">'+rl[res]+'</div></div>';}
-    let meta='';if(e.ko)meta+='<span>⏰'+e.ko+'</span>';if(e.dismiss)meta+='<span>🏁'+e.dismiss+'</span>';if(e.ve)meta+='<span>📍'+e.ve+'</span>';if(e.cat)meta+='<span>🏷'+e.cat+'</span>';if(e.fee)meta+='<span>💴'+e.fee+'</span>';
+    let sc='';
+    if(scored.length===1){const r=scored[0],us=parseInt(r.us),th=parseInt(r.th),res=us>th?'win':us<th?'lose':'draw';const rl={win:'勝',lose:'負',draw:'分'};sc='<div class="escore"><div class="sv '+res+'">'+us+'-'+th+'</div><div class="sl2 '+res+'">'+rl[res]+'</div></div>';}
+    else if(scored.length>1){let w=0,dr=0,l=0;scored.forEach(r=>{const us=parseInt(r.us),th=parseInt(r.th);if(us>th)w++;else if(us===th)dr++;else l++;});sc='<div class="escore"><div class="sv" style="font-size:12px;color:var(--text)">'+scored.length+'試合</div><div class="sl2" style="background:#f0f0f0;color:var(--muted)">'+w+'勝'+dr+'分'+l+'負</div></div>';}
+    let meta='';if(e.ga)meta+='<span>⏰'+e.ga+'</span>';if(e.dismiss)meta+='<span>🏁'+e.dismiss+'</span>';if(e.ve)meta+='<span>📍'+e.ve+'</span>';if(e.cat)meta+='<span>🏷'+e.cat+'</span>';if(e.fee)meta+='<span>💴'+e.fee+'</span>';
     card.innerHTML='<div class="ein"><div class="edc '+dcCls+'"><div class="em">'+MN[d.getMonth()]+'</div><div class="ed '+team+'">'+d.getDate()+'</div><div class="edw">'+DOWS[d.getDay()]+'</div></div><div class="eb"><span class="tchip tchip-'+team+'">'+info.n+'</span><span class="tbdg '+bCls+'">'+tpL+'</span><div class="et">'+(e.ttl||'（タイトルなし）')+'</div>'+(meta?'<div class="emeta">'+meta+'</div>':'')+'</div>'+sc+'</div>';
     card.addEventListener('click',()=>openDetail(e.id));con.appendChild(card);
   });
@@ -564,8 +572,8 @@ function openNew(){
   document.getElementById('fm-title').textContent='試合を登録';
   document.getElementById('fm-banner').className='tbn '+t;
   document.getElementById('fm-banner').textContent=info.i+' '+info.n+' の試合';
-  ['f-ttl','f-ga','f-ko','f-dismiss','f-ve','f-gl','f-opponents','f-fee','f-mo'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-us').value='';document.getElementById('f-th').value='';
+  ['f-ttl','f-ga','f-gv','f-dismiss','f-ve','f-vemap','f-gl','f-opponents','f-fee','f-mo'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('results-list').innerHTML='';
   document.getElementById('f-dt').value=new Date().toISOString().slice(0,10);
   document.getElementById('f-cat').value=t==='chu'?'U15':'U11';
   setFmColor(t);selType('of');
@@ -574,10 +582,12 @@ function openNew(){
 function closeFm(){document.getElementById('fm').classList.remove('open');}
 
 function setFmColor(t){
-  ['f-ttl','f-dt','f-ga','f-ko','f-dismiss','f-ve','f-gl','f-opponents','f-fee','f-us','f-th','f-mo','f-cat'].forEach(id=>{
+  ['f-ttl','f-dt','f-ga','f-gv','f-dismiss','f-ve','f-vemap','f-gl','f-opponents','f-fee','f-mo','f-cat'].forEach(id=>{
     const el=document.getElementById(id);el.className=el.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;
   });
+  document.querySelectorAll('.rrow input').forEach(el=>{el.className=el.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;});
   document.getElementById('sav-btn').className='sav '+t;
+  document.getElementById('radd-btn').className='radd '+t;
 }
 
 function selType(tp){
@@ -593,17 +603,20 @@ async function saveEv(){
   if(!ttl||!dt||!dateOk){showToast('タイトルと日付（YYYY-MM-DD形式）は必須です');return;}
   const btn=document.getElementById('sav-btn');btn.disabled=true;
   document.getElementById('sav-txt').innerHTML='<span class="spin"></span> 保存中...';
+  const rrows=document.querySelectorAll('#results-list .rrow');
+  const results=[];
+  rrows.forEach(row=>{const opp=row.querySelector('.r-opp').value.trim(),us=row.querySelector('.r-us').value,th=row.querySelector('.r-th').value;if(opp||us!==''||th!=='')results.push({opp,us,th});});
   const ev={id:eid||gid(),team,type:selType_v,ttl,date:dt,
     cat:document.getElementById('f-cat').value,
     ga:document.getElementById('f-ga').value,
-    ko:document.getElementById('f-ko').value,
+    gv:document.getElementById('f-gv').value,
     dismiss:document.getElementById('f-dismiss').value,
     ve:document.getElementById('f-ve').value.trim(),
+    vemap:document.getElementById('f-vemap').value.trim(),
     gl:document.getElementById('f-gl').value.trim(),
     opponents:document.getElementById('f-opponents').value.trim(),
     fee:document.getElementById('f-fee').value.trim(),
-    us:document.getElementById('f-us').value,
-    th:document.getElementById('f-th').value,
+    results:JSON.stringify(results),
     mo:document.getElementById('f-mo').value.trim()};
   const ok=await gasPost({action:'save',sheet:'events',data:ev});
   if(ok){
@@ -622,24 +635,25 @@ function openDetail(id){
   const d=new Date(ev.date+'T00:00:00'),t=ev.team||'fa',info=TI[t],tp=ev.type||'of';
   const tpL={of:'公式戦',tr:'TRM',ot:'その他'}[tp];
   const bCls=tp==='of'?'b'+(t==='fa'?'fa':'ch')+'o':tp==='tr'?'btrm':'both';
-  const us=parseInt(ev.us),th=parseInt(ev.th);
-  const res=(!isNaN(us)&&!isNaN(th))?(us>th?'win':us<th?'lose':'draw'):null;
-  const rl={win:'勝ち 🎉',lose:'負け',draw:'引き分け'};
+  const evResults=ev.results?JSON.parse(ev.results):[];
+  const scored=evResults.filter(r=>r.us!==''&&r.th!==''&&!isNaN(parseInt(r.us))&&!isNaN(parseInt(r.th)));
   document.getElementById('dm-title').textContent=ev.ttl||'試合詳細';
   let h='<div class="tbn '+t+'">'+info.i+' '+info.n+'</div>';
-  if(res)h+='<div class="dsb '+t+'"><div class="dsn '+res+'">'+us+' - '+th+'</div><div class="dsr">'+rl[res]+'</div></div>';
+  if(scored.length===1){const r=scored[0],us=parseInt(r.us),th=parseInt(r.th),res=us>th?'win':us<th?'lose':'draw';const rl={win:'勝ち 🎉',lose:'負け',draw:'引き分け'};h+='<div class="dsb '+t+'"><div class="dsn '+res+'">'+us+' - '+th+'</div><div class="dsr">'+rl[res]+'</div></div>';}
+  else if(scored.length>1){let w=0,dr=0,l=0;scored.forEach(r=>{const us=parseInt(r.us),th=parseInt(r.th);if(us>th)w++;else if(us===th)dr++;else l++;});h+='<div class="dsb '+t+'"><div class="dsn" style="font-size:26px;color:var(--text)">'+w+'勝'+dr+'分'+l+'敗</div><div class="dsr">'+scored.length+'試合</div></div>';}
   h+='<div class="dr"><div class="dl">日付</div><div class="dv">'+d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（'+DOWS[d.getDay()]+'）</div></div>';
   h+='<div class="dr"><div class="dl">種別</div><div class="dv"><span class="tbdg '+bCls+'">'+tpL+'</span></div></div>';
   if(ev.cat)h+='<div class="dr"><div class="dl">カテゴリ</div><div class="dv">'+ev.cat+'</div></div>';
-  if(ev.ga) h+='<div class="dr"><div class="dl">集合時間</div><div class="dv">'+ev.ga+'</div></div>';
-  if(ev.ko) h+='<div class="dr"><div class="dl">KO</div><div class="dv">'+ev.ko+'</div></div>';
-  if(ev.dismiss) h+='<div class="dr"><div class="dl">解散予定</div><div class="dv">'+ev.dismiss+'</div></div>';
-  if(ev.ve) h+='<div class="dr"><div class="dl">会場</div><div class="dv">'+ev.ve+'</div></div>';
-  if(ev.gl) h+='<div class="dr"><div class="dl">集合場所</div><div class="dv">'+ev.gl+'</div></div>';
-  if(ev.opponents) h+='<div class="dr"><div class="dl">対戦相手</div><div class="dv" style="white-space:pre-wrap">'+ev.opponents+'</div></div>';
-  if(ev.fee) h+='<div class="dr"><div class="dl">参加費等</div><div class="dv">'+ev.fee+'</div></div>';
-  if(ev.mo) h+='<div class="dr"><div class="dl">持ち物・メモ</div><div class="dv" style="white-space:pre-wrap">'+ev.mo+'</div></div>';
-  h+='<button class="edb '+t+'" onclick="openEdit(\''+id+'\')">✏️ 編集・スコア入力</button>';
+  if(ev.ga)h+='<div class="dr"><div class="dl">集合（クラブハウス）</div><div class="dv">'+ev.ga+'</div></div>';
+  if(ev.gv)h+='<div class="dr"><div class="dl">集合（会場）</div><div class="dv">'+ev.gv+'</div></div>';
+  if(ev.dismiss)h+='<div class="dr"><div class="dl">解散予定</div><div class="dv">'+ev.dismiss+'</div></div>';
+  if(ev.ve||ev.vemap){h+='<div class="dr"><div class="dl">会場</div><div class="dv">'+(ev.ve||'')+(ev.vemap?'<br><a href="'+ev.vemap+'" target="_blank" rel="noopener" style="color:var(--'+t+');font-size:12px">📍 Google マップで開く</a>':'')+'</div></div>';}
+  if(ev.gl)h+='<div class="dr"><div class="dl">集合場所</div><div class="dv">'+ev.gl+'</div></div>';
+  if(evResults.length>0){const rl2={win:'勝',lose:'負',draw:'分'};h+='<div class="dr"><div class="dl">試合結果</div><div class="dv">';evResults.forEach(r=>{const us=parseInt(r.us),th=parseInt(r.th),ok=!isNaN(us)&&!isNaN(th),res=ok?(us>th?'win':us<th?'lose':'draw'):null;h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">';if(r.opp)h+='<span style="font-size:11px;color:var(--muted)">'+r.opp+'</span>';if(ok)h+='<span class="sv '+res+'" style="font-size:15px">'+us+'-'+th+'</span><span class="sl2 '+res+'">'+rl2[res]+'</span>';h+='</div>';});h+='</div></div>';}
+  if(ev.opponents)h+='<div class="dr"><div class="dl">対戦相手</div><div class="dv" style="white-space:pre-wrap">'+ev.opponents+'</div></div>';
+  if(ev.fee)h+='<div class="dr"><div class="dl">参加費等</div><div class="dv">'+ev.fee+'</div></div>';
+  if(ev.mo)h+='<div class="dr"><div class="dl">持ち物・メモ</div><div class="dv" style="white-space:pre-wrap">'+ev.mo+'</div></div>';
+  h+='<button class="edb '+t+'" onclick="openEdit(\''+id+'\')">✏️ 編集</button>';
   h+='<button class="delb" onclick="delEv(\''+id+'\')">🗑 削除</button>';
   document.getElementById('dm-body').innerHTML=h;
   document.getElementById('dm').classList.add('open');
@@ -655,14 +669,16 @@ function openEdit(id){
   document.getElementById('f-ttl').value=ev.ttl||'';
   document.getElementById('f-dt').value=ev.date||'';
   document.getElementById('f-ga').value=ev.ga||'';
-  document.getElementById('f-ko').value=ev.ko||'';
+  document.getElementById('f-gv').value=ev.gv||'';
   document.getElementById('f-dismiss').value=ev.dismiss||'';
   document.getElementById('f-ve').value=ev.ve||'';
+  document.getElementById('f-vemap').value=ev.vemap||'';
   document.getElementById('f-gl').value=ev.gl||'';
   document.getElementById('f-opponents').value=ev.opponents||'';
   document.getElementById('f-fee').value=ev.fee||'';
-  document.getElementById('f-us').value=ev.us||'';
-  document.getElementById('f-th').value=ev.th||'';
+  document.getElementById('results-list').innerHTML='';
+  const evResults=ev.results?JSON.parse(ev.results):[];
+  evResults.forEach(r=>addResultRow(r.opp,r.us,r.th,t));
   document.getElementById('f-mo').value=ev.mo||'';
   document.getElementById('f-cat').value=ev.cat||'U11';
   setFmColor(t);selType(ev.type||'of');
@@ -732,10 +748,9 @@ function renderStats(){
     cf.appendChild(btn);
   });
   const filtered=teamEvs.filter(e=>statCat==='全て'||e.cat===statCat);
-  const scored=filtered.filter(e=>e.us!==''&&e.th!==''&&!isNaN(parseInt(e.us))&&!isNaN(parseInt(e.th)));
-  let w=0,dr=0,l=0,gf=0,ga=0;
-  scored.forEach(e=>{const us=parseInt(e.us),th=parseInt(e.th);gf+=us;ga+=th;if(us>th)w++;else if(us===th)dr++;else l++;});
-  const tot=scored.length,top=t+'-top';
+  let w=0,dr=0,l=0,gf=0,ga=0,tot=0;
+  filtered.forEach(e=>{const rs=e.results?JSON.parse(e.results):[];rs.forEach(r=>{const us=parseInt(r.us),th=parseInt(r.th);if(!isNaN(us)&&!isNaN(th)){gf+=us;ga+=th;tot++;if(us>th)w++;else if(us===th)dr++;else l++;}});});
+  const top=t+'-top';
   document.getElementById('stats-grid').innerHTML=
     '<div class="stat-card '+top+'"><div class="stat-num '+t+'">'+tot+'</div><div class="stat-lbl">試合数</div></div>'+
     '<div class="stat-card '+top+'"><div class="stat-num '+t+'" style="font-size:22px">'+w+'勝'+dr+'分'+l+'敗</div><div class="stat-lbl">勝敗</div></div>'+
@@ -746,14 +761,24 @@ function renderStats(){
   document.getElementById('wdl-legend').innerHTML='<span><span class="wdl-dot" style="background:var(--win)"></span>勝('+w+')</span><span><span class="wdl-dot" style="background:var(--draw)"></span>分('+dr+')</span><span><span class="wdl-dot" style="background:var(--lose)"></span>負('+l+')</span>';
   const tbody=document.getElementById('hist-body');tbody.innerHTML='';
   filtered.sort((a,b)=>b.date.localeCompare(a.date)).forEach(e=>{
-    const us=parseInt(e.us),th=parseInt(e.th);
-    const res=(!isNaN(us)&&!isNaN(th))?(us>th?'win':us<th?'lose':'draw'):null;
-    const resL=res?{win:'勝',lose:'負',draw:'分'}[res]:'－';
-    const resC=res?'color:var(--'+res+')':'';
-    const tr=document.createElement('tr');
-    tr.innerHTML='<td style="white-space:nowrap">'+e.date+'</td><td style="font-size:11px">'+(e.ttl||'')+(e.cat?'<br><span style="color:var(--muted);font-size:10px">'+e.cat+'</span>':'')+'</td><td style="'+resC+';font-weight:700;font-size:12px">'+resL+'</td><td style="font-family:\'Oswald\',sans-serif;font-size:14px">'+(!isNaN(us)&&!isNaN(th)?us+'-'+th:'－')+'</td>';
-    tbody.appendChild(tr);
+    const rs=e.results?JSON.parse(e.results):[];
+    if(!rs.length){const tr=document.createElement('tr');tr.innerHTML='<td style="white-space:nowrap">'+e.date+'</td><td style="font-size:11px">'+(e.ttl||'')+(e.cat?'<br><span style="color:var(--muted);font-size:10px">'+e.cat+'</span>':'')+'</td><td>－</td><td>－</td>';tbody.appendChild(tr);return;}
+    rs.forEach((r,i)=>{const us=parseInt(r.us),th=parseInt(r.th),res=(!isNaN(us)&&!isNaN(th))?(us>th?'win':us<th?'lose':'draw'):null,resL=res?{win:'勝',lose:'負',draw:'分'}[res]:'－',resC=res?'color:var(--'+res+')':'';const tr=document.createElement('tr');const titleCell=i===0?((e.ttl||'')+(e.cat?'<br><span style="color:var(--muted);font-size:10px">'+e.cat+'</span>':'')):(r.opp?'<span style="color:var(--muted)">'+r.opp+'</span>':'');tr.innerHTML='<td style="white-space:nowrap">'+(i===0?e.date:'')+'</td><td style="font-size:11px">'+titleCell+'</td><td style="'+resC+';font-weight:700;font-size:12px">'+resL+'</td><td style="font-family:\'Oswald\',sans-serif;font-size:14px">'+(!isNaN(us)&&!isNaN(th)?us+'-'+th:'－')+'</td>';tbody.appendChild(tr);});
   });
+}
+
+// ===== 試合結果行 =====
+function addResultRow(opp,us,th,t){
+  opp=opp||'';us=us||'';th=th||'';t=t||team;
+  const list=document.getElementById('results-list');
+  const row=document.createElement('div');row.className='rrow';
+  const oppIn=document.createElement('input');oppIn.className='fi '+t+' r-opp';oppIn.placeholder='vs ○○FC';oppIn.value=opp;
+  const usIn=document.createElement('input');usIn.className='fi '+t+' r-sc r-us';usIn.type='number';usIn.min='0';usIn.placeholder='自';usIn.value=us;usIn.style.textAlign='center';
+  const sep=document.createElement('div');sep.className='ss';sep.textContent='-';
+  const thIn=document.createElement('input');thIn.className='fi '+t+' r-sc r-th';thIn.type='number';thIn.min='0';thIn.placeholder='相';thIn.value=th;thIn.style.textAlign='center';
+  const rm=document.createElement('button');rm.className='r-rm';rm.type='button';rm.textContent='×';rm.onclick=function(){row.remove();};
+  row.appendChild(oppIn);row.appendChild(usIn);row.appendChild(sep);row.appendChild(thIn);row.appendChild(rm);
+  list.appendChild(row);
 }
 
 // ===== ユーティリティ =====

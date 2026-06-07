@@ -12,7 +12,7 @@ function doGet(e) {
       var v = row[i];
       if (k === 'date') {
         obj[k] = v instanceof Date ? Utilities.formatDate(v, 'Asia/Tokyo', 'yyyy-MM-dd') : String(v || '');
-      } else if (k === 'ga' || k === 'ko' || k === 'dismiss') {
+      } else if (k === 'ga' || k === 'gv' || k === 'dismiss') {
         obj[k] = v instanceof Date ? Utilities.formatDate(v, 'Asia/Tokyo', 'HH:mm') : String(v || '');
       } else {
         obj[k] = (v === null || v === undefined) ? '' : String(v);
@@ -34,7 +34,7 @@ function doPost(e) {
   if (action === 'save') {
     var ws = ss.getSheetByName(sheetName);
     var headers = sheetName === 'events'
-      ? ['id','team','type','ttl','date','cat','ga','ko','dismiss','ve','gl','opponents','fee','us','th','mo']
+      ? ['id','team','type','ttl','date','cat','ga','gv','dismiss','ve','vemap','gl','opponents','fee','results','mo']
       : ['id','team','ttl','body','date'];
 
     if (!ws) {
