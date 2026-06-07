@@ -510,7 +510,8 @@ async function syncAll(){
   notices = Array.isArray(notData) ? notData : [];
   saveCache();
   const now=new Date();
-  setSyncStatus('ok', (now.getMonth()+1)+'月'+now.getDate()+'日 '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0')+'に同期（'+evs.length+'件）');
+  const faCount=evs.filter(e=>e.team==='fa').length, chuCount=evs.filter(e=>e.team==='chu').length;
+  setSyncStatus('ok', (now.getMonth()+1)+'月'+now.getDate()+'日 '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0')+'に同期（FA:'+faCount+'件 CHU:'+chuCount+'件）');
   updCnts(); renderCal(); renderList();
   if(tab==='stats') renderStats();
   if(tab==='notice') renderNotices();

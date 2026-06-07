@@ -135,6 +135,22 @@ function doPost(e) {
   return json({ ok: false });
 }
 
+function testGet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ws = ss.getSheetByName('events');
+  if (!ws) { Logger.log('eventsシートが見つかりません'); return; }
+  var rows = ws.getDataRange().getValues();
+  Logger.log('行数（ヘッダー含む）: ' + rows.length);
+  if (rows.length > 1) {
+    Logger.log('ヘッダー: ' + JSON.stringify(rows[0]));
+    Logger.log('1行目データ: ' + JSON.stringify(rows[1]));
+  }
+  var fakeE = { parameter: { sheet: 'events' } };
+  var result = JSON.parse(doGet(fakeE).getContent());
+  Logger.log('doGet返却件数: ' + result.length);
+  if (result.length > 0) Logger.log('最初のイベント: ' + JSON.stringify(result[0]));
+}
+
 function json(data) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
