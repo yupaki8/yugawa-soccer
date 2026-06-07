@@ -471,7 +471,7 @@ function setSyncStatus(state, msg){
 async function gasGet(sheet){
   if(!GAS_URL) return null;
   try{
-    const res=await fetch(GAS_URL+'?sheet='+sheet);
+    const res=await fetch(GAS_URL+'?sheet='+sheet+'&_='+Date.now(),{cache:'no-store'});
     return await res.json();
   }catch(e){ return null; }
 }
@@ -500,7 +500,13 @@ async function syncAll(){
   setSyncStatus('ing','同期中...');
   const [evData, notData]= await Promise.all([gasGet('events'), gasGet('notices')]);
   if(evData===null){ setSyncStatus('err','接続失敗 — URLを確認してください'); return; }
-  evs = Array.isArray(evData) ? evData : [];
+  const incoming=Array.isArray(evData)?evData:[];
+  if(incoming.length===0&&evs.length>0){
+    setSyncStatus('err','GASから0件を受信（スプレッドシートを確認）');
+    updCnts();renderCal();renderList();
+    return;
+  }
+  evs=incoming;
   notices = Array.isArray(notData) ? notData : [];
   saveCache();
   const now=new Date();
