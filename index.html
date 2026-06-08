@@ -714,6 +714,7 @@ function selType(tp){
 }
 
 async function saveEv(){
+  if(_uploading>0){showToast('⏳ 画像をアップロード中です。完了後に保存してください');return;}
   const ttl=document.getElementById('f-ttl').value.trim(),dt=document.getElementById('f-dt').value;
   const dateOk=/^\d{4}-\d{2}-\d{2}$/.test(dt);
   if(!ttl||!dt||!dateOk){showToast('タイトルと日付（YYYY-MM-DD形式）は必須です');return;}
@@ -895,7 +896,7 @@ function renderStats(){
 }
 
 // ===== 画像アップロード =====
-let imgUrls=[];
+let imgUrls=[], _uploading=0;
 
 function parseImgurls(str){
   if(!str)return[];
@@ -904,7 +905,8 @@ function parseImgurls(str){
   return str?[str]:[];
 }
 function syncImgurlField(){
-  document.getElementById('f-imgurl').value=imgUrls.length?JSON.stringify(imgUrls):'';
+  const driveUrls=imgUrls.filter(u=>u&&!u.startsWith('data:'));
+  document.getElementById('f-imgurl').value=driveUrls.length?JSON.stringify(driveUrls):'';
 }
 function renderImgThumbs(){
   const thumbs=document.getElementById('img-thumbs');thumbs.innerHTML='';
@@ -937,13 +939,18 @@ function compressImage(file,maxW,q){
   });
 }
 async function processImageFile(file){
+  _uploading++;
   const st=document.getElementById('img-st');
   st.textContent='📤 アップロード中...';
   const b64=await compressImage(file,1200,0.82);
   const tempIdx=imgUrls.length;
   imgUrls.push('data:image/jpeg;base64,'+b64.split(',')[1]);
   renderImgThumbs();
-  if(!GAS_URL){st.textContent='❌ Apps Script URLが未設定';return;}
+  if(!GAS_URL){
+    imgUrls.splice(tempIdx,1);syncImgurlField();renderImgThumbs();
+    st.textContent='❌ Apps Script URLが未設定';
+    _uploading--;return;
+  }
   const res=await gasPostRaw({action:'uploadImage',filename:file.name||'image.jpg',mimeType:file.type||'image/jpeg',base64:b64.split(',')[1]});
   if(res&&res.ok&&res.url){
     imgUrls[tempIdx]=res.url;
@@ -953,6 +960,7 @@ async function processImageFile(file){
     imgUrls.splice(tempIdx,1);syncImgurlField();renderImgThumbs();
     st.textContent='❌ アップロード失敗（URLを確認）';
   }
+  _uploading--;
 }
 function handleImgSelect(input){if(input.files[0])processImageFile(input.files[0]);}
 document.addEventListener('paste',function(e){
