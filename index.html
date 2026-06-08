@@ -901,7 +901,8 @@ let imgUrls=[], _uploading=0;
 function parseImgurls(str){
   if(!str)return[];
   str=str.trim();
-  if(str.startsWith('[')){try{const a=JSON.parse(str);return Array.isArray(a)?a.filter(u=>u&&typeof u==='string'):[str];}catch(e){}}
+  if(str.startsWith('[')){try{const a=JSON.parse(str);return Array.isArray(a)?a.filter(u=>u&&typeof u==='string'&&!u.startsWith('data:')):[]; }catch(e){return[];}}
+  if(str.startsWith('data:'))return[];
   return str?[str]:[];
 }
 function syncImgurlField(){
