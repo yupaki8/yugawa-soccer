@@ -185,9 +185,13 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .r-rm{background:none;border:none;color:var(--lose);cursor:pointer;font-size:18px;line-height:1;padding:0 4px;flex-shrink:0;}
 .radd{width:100%;background:none;border:1.5px dashed var(--border);border-radius:9px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;}
 .radd.fa:hover{border-color:var(--fa);color:var(--fa);}.radd.chu:hover{border-color:var(--chu);color:var(--chu);}
-.img-area{border:2px dashed var(--border);border-radius:9px;padding:14px;text-align:center;cursor:pointer;color:var(--muted);font-size:12px;transition:border-color .2s,color .2s;}
-.img-area.fa:hover{border-color:var(--fa);color:var(--fa);}.img-area.chu:hover{border-color:var(--chu);color:var(--chu);}
-.img-preview{width:100%;border-radius:7px;margin-top:8px;display:none;}
+.img-area{border:2px dashed var(--border);border-radius:9px;padding:10px;color:var(--muted);font-size:12px;transition:border-color .2s,color .2s;}
+.img-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
+.img-thumb-wrap{position:relative;width:80px;height:80px;flex-shrink:0;}
+.img-thumb-wrap img{width:80px;height:80px;object-fit:cover;border-radius:7px;display:block;}
+.img-thumb-rm{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:#e24b4a;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;}
+.img-add-btn{width:100%;padding:10px;border:2px dashed var(--border);border-radius:9px;background:none;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;transition:border-color .2s,color .2s;}
+.img-add-btn.fa:hover{border-color:var(--fa);color:var(--fa);}.img-add-btn.chu:hover{border-color:var(--chu);color:var(--chu);}
 .img-st{font-size:11px;margin-top:5px;min-height:14px;}
 </style>
 </head>
@@ -374,10 +378,13 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <input class="fi fa" id="f-fee" placeholder="例：参加費1,000円 / 交通費700円">
       </div>
       <div class="fg"><label class="fl">元データ画像</label>
-        <div class="img-area fa" id="img-area" onclick="document.getElementById('f-img').click()">
-          <div id="img-area-txt">📎 クリックで選択 / 貼り付け（Ctrl+V）可</div>
+        <div class="img-area fa" id="img-area">
+          <div class="img-thumbs" id="img-thumbs"></div>
+          <button type="button" class="img-add-btn fa" id="img-add-btn"
+            onclick="document.getElementById('f-img').click()">
+            📎 クリックで追加 / 貼り付け（Ctrl+V）可
+          </button>
           <div class="img-st" id="img-st"></div>
-          <img class="img-preview" id="img-preview" alt="">
         </div>
         <input type="file" id="f-img" accept="image/*" style="display:none" onchange="handleImgSelect(this)">
         <input type="hidden" id="f-imgurl">
@@ -661,7 +668,7 @@ function renderList(){
     let sc='';
     if(scored.length===1){const r=scored[0],us=parseInt(r.us),th=parseInt(r.th),res=us>th?'win':us<th?'lose':'draw';const rl={win:'勝',lose:'負',draw:'分'};sc='<div class="escore"><div class="sv '+res+'">'+us+'-'+th+'</div><div class="sl2 '+res+'">'+rl[res]+'</div></div>';}
     else if(scored.length>1){let w=0,dr=0,l=0;scored.forEach(r=>{const us=parseInt(r.us),th=parseInt(r.th);if(us>th)w++;else if(us===th)dr++;else l++;});sc='<div class="escore"><div class="sv" style="font-size:12px;color:var(--text)">'+scored.length+'試合</div><div class="sl2" style="background:#f0f0f0;color:var(--muted)">'+w+'勝'+dr+'分'+l+'負</div></div>';}
-    let meta='';if(e.ga)meta+='<span>⏰'+e.ga+'</span>';if(e.dismiss)meta+='<span>🏁'+e.dismiss+'</span>';if(e.ve)meta+='<span>📍'+e.ve+'</span>';if(e.cat)meta+='<span>🏷'+e.cat+'</span>';if(e.fee)meta+='<span>💴'+e.fee+'</span>';if(e.imgurl)meta+='<span>📎</span>';
+    let meta='';if(e.ga)meta+='<span>⏰'+e.ga+'</span>';if(e.dismiss)meta+='<span>🏁'+e.dismiss+'</span>';if(e.ve)meta+='<span>📍'+e.ve+'</span>';if(e.cat)meta+='<span>🏷'+e.cat+'</span>';if(e.fee)meta+='<span>💴'+e.fee+'</span>';if(parseImgurls(e.imgurl||'').length)meta+='<span>📎</span>';
     card.innerHTML='<div class="ein"><div class="edc '+dcCls+'"><div class="em">'+MN[d.getMonth()]+'</div><div class="ed '+team+'">'+d.getDate()+'</div><div class="edw">'+DOWS[d.getDay()]+'</div></div><div class="eb"><span class="tchip tchip-'+team+'">'+info.n+'</span><span class="tbdg '+bCls+'">'+tpL+'</span><div class="et">'+(e.ttl||'（タイトルなし）')+'</div>'+(meta?'<div class="emeta">'+meta+'</div>':'')+'</div>'+sc+'</div>';
     card.addEventListener('click',()=>openDetail(e.id));con.appendChild(card);
   });
@@ -675,9 +682,8 @@ function openNew(){
   document.getElementById('fm-banner').textContent=info.i+' '+info.n+' の試合';
   ['f-ttl','f-ga','f-gv','f-dismiss','f-ve','f-vemap','f-gl','f-opponents','f-fee','f-mo'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('results-list').innerHTML='';
-  document.getElementById('f-imgurl').value='';document.getElementById('f-img').value='';
-  document.getElementById('img-preview').src='';document.getElementById('img-preview').style.display='none';
-  document.getElementById('img-st').textContent='';document.getElementById('img-area-txt').textContent='📎 クリックで選択 / 貼り付け（Ctrl+V）可';
+  imgUrls=[];document.getElementById('f-imgurl').value='';
+  document.getElementById('img-st').textContent='';renderImgThumbs();
   document.getElementById('f-dt').value=new Date().toISOString().slice(0,10);
   document.getElementById('f-cat').value=t==='chu'?'U15':'U11';
   setFmColor(t);selType('of');
@@ -697,6 +703,7 @@ function setFmColor(t){
   document.getElementById('sav-btn').className='sav '+t;
   document.getElementById('radd-btn').className='radd '+t;
   const ia=document.getElementById('img-area');ia.className=ia.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;
+  const ab=document.getElementById('img-add-btn');ab.className=ab.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;
 }
 
 function selType(tp){
@@ -769,7 +776,8 @@ function openDetail(id){
   if(ev.opponents)h+='<div class="dr"><div class="dl">対戦相手</div><div class="dv" style="white-space:pre-wrap">'+ev.opponents+'</div></div>';
   if(ev.fee)h+='<div class="dr"><div class="dl">参加費等</div><div class="dv">'+ev.fee+'</div></div>';
   if(ev.mo)h+='<div class="dr"><div class="dl">持ち物・メモ</div><div class="dv" style="white-space:pre-wrap">'+ev.mo+'</div></div>';
-  if(ev.imgurl)h+='<div class="dr"><div class="dl">元データ</div><div class="dv"><a href="'+ev.imgurl+'" target="_blank" rel="noopener"><img src="'+ev.imgurl+'" style="width:100%;border-radius:7px;margin-top:2px" onerror="this.style.display=\'none\';this.insertAdjacentHTML(\'afterend\',\'<span style=\\\"font-size:11px;color:var(--muted)\\\">リンクで開く →</span>\')"></a></div></div>';
+  const detailImgs=parseImgurls(ev.imgurl||'');
+  if(detailImgs.length){h+='<div class="dr"><div class="dl">元データ</div><div class="dv"><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px">';detailImgs.forEach(url=>{h+='<a href="'+url+'" target="_blank" rel="noopener"><img src="'+url+'" style="width:80px;height:80px;object-fit:cover;border-radius:7px;" onerror="this.style.display=\'none\'"></a>';});h+='</div></div></div>';}
   h+='<button class="edb '+t+'" onclick="openEdit(\''+id+'\')">✏️ 編集</button>';
   h+='<button class="delb" onclick="delEv(\''+id+'\')">🗑 削除</button>';
   document.getElementById('dm-body').innerHTML=h;
@@ -796,11 +804,8 @@ function openEdit(id){
   document.getElementById('results-list').innerHTML='';
   const evResults=ev.results?JSON.parse(ev.results):[];
   evResults.forEach(r=>addResultRow(r.opp,r.ko||'',r.us,r.th,r.scorers,t));
-  const imgurl=ev.imgurl||'';
-  document.getElementById('f-imgurl').value=imgurl;document.getElementById('f-img').value='';
-  const prev=document.getElementById('img-preview');
-  if(imgurl){prev.src=imgurl;prev.style.display='block';document.getElementById('img-area-txt').textContent='✅ 画像あり（変更する場合は選択）';document.getElementById('img-st').textContent='';}
-  else{prev.src='';prev.style.display='none';document.getElementById('img-area-txt').textContent='📎 クリックで選択 / 貼り付け（Ctrl+V）可';document.getElementById('img-st').textContent='';}
+  imgUrls=parseImgurls(ev.imgurl||'');syncImgurlField();renderImgThumbs();
+  document.getElementById('img-st').textContent=imgUrls.length?'✅ '+imgUrls.length+'枚（変更可）':'';
   document.getElementById('f-mo').value=ev.mo||'';
   document.getElementById('f-cat').value=ev.cat||'U11';
   setFmColor(t);selType(ev.type||'of');
@@ -890,6 +895,30 @@ function renderStats(){
 }
 
 // ===== 画像アップロード =====
+let imgUrls=[];
+
+function parseImgurls(str){
+  if(!str)return[];
+  str=str.trim();
+  if(str.startsWith('[')){try{const a=JSON.parse(str);return Array.isArray(a)?a.filter(u=>u&&typeof u==='string'):[str];}catch(e){}}
+  return str?[str]:[];
+}
+function syncImgurlField(){
+  document.getElementById('f-imgurl').value=imgUrls.length?JSON.stringify(imgUrls):'';
+}
+function renderImgThumbs(){
+  const thumbs=document.getElementById('img-thumbs');thumbs.innerHTML='';
+  imgUrls.forEach((url,i)=>{
+    const wrap=document.createElement('div');wrap.className='img-thumb-wrap';
+    const img=document.createElement('img');img.src=url;img.alt='';
+    img.onerror=function(){this.style.opacity='0.3';};
+    const rm=document.createElement('button');rm.type='button';rm.className='img-thumb-rm';rm.textContent='✕';
+    rm.onclick=function(e){e.stopPropagation();imgUrls.splice(i,1);syncImgurlField();renderImgThumbs();};
+    wrap.appendChild(img);wrap.appendChild(rm);thumbs.appendChild(wrap);
+  });
+  document.getElementById('f-img').value='';
+}
+
 function compressImage(file,maxW,q){
   return new Promise(resolve=>{
     const reader=new FileReader();
@@ -910,17 +939,18 @@ function compressImage(file,maxW,q){
 async function processImageFile(file){
   const st=document.getElementById('img-st');
   st.textContent='📤 アップロード中...';
-  document.getElementById('img-area-txt').textContent=file.name||'画像';
   const b64=await compressImage(file,1200,0.82);
-  const prev=document.getElementById('img-preview');
-  prev.src=b64;prev.style.display='block';
+  const tempIdx=imgUrls.length;
+  imgUrls.push('data:image/jpeg;base64,'+b64.split(',')[1]);
+  renderImgThumbs();
   if(!GAS_URL){st.textContent='❌ Apps Script URLが未設定';return;}
   const res=await gasPostRaw({action:'uploadImage',filename:file.name||'image.jpg',mimeType:file.type||'image/jpeg',base64:b64.split(',')[1]});
   if(res&&res.ok&&res.url){
-    document.getElementById('f-imgurl').value=res.url;
-    prev.src=res.url;
-    st.textContent='✅ アップロード完了';
+    imgUrls[tempIdx]=res.url;
+    syncImgurlField();renderImgThumbs();
+    st.textContent=imgUrls.length>1?'✅ '+imgUrls.length+'枚アップロード済み':'✅ アップロード完了';
   }else{
+    imgUrls.splice(tempIdx,1);syncImgurlField();renderImgThumbs();
     st.textContent='❌ アップロード失敗（URLを確認）';
   }
 }
@@ -1033,21 +1063,23 @@ async function aiAnalyze(){
     else{const objM=aiResult.text.match(/\{[\s\S]*\}/);if(!objM)throw new Error();events=[JSON.parse(objM[0])];}
   }catch(e){showToast('❌ 解析失敗');console.error(aiResult.text);return;}
 
-  let firstImgUrl='';
-  const firstImg=images.find(i=>i.mimeType!=='application/pdf');
-  if(firstImg){
+  const nonPdfImgs=images.filter(i=>i.mimeType!=='application/pdf');
+  let _aiUrls=[];
+  if(nonPdfImgs.length){
     showToast('✅ AI完了 — 画像アップロード中...',10000);
-    const imgRes=await gasPostRaw({action:'uploadImage',filename:firstImg.filename||'image.jpg',mimeType:'image/jpeg',base64:firstImg.b64});
-    if(imgRes&&imgRes.ok&&imgRes.url){firstImgUrl=imgRes.url;}
-    else{console.error('uploadImage failed:',imgRes);}
+    for(const img of nonPdfImgs){
+      const imgRes=await gasPostRaw({action:'uploadImage',filename:img.filename||'image.jpg',mimeType:'image/jpeg',base64:img.b64});
+      if(imgRes&&imgRes.ok&&imgRes.url)_aiUrls.push(imgRes.url);
+      else console.error('uploadImage failed:',imgRes);
+    }
   }
 
   closeAiStage();
   if(events.length===1){
-    fillFormFromAi(events[0],firstImgUrl);
+    fillFormFromAi(events[0],_aiUrls);
     showToast('✅ AI読み込み完了');
   }else{
-    showAiResults(events,firstImgUrl);
+    showAiResults(events,_aiUrls);
   }
 }
 
@@ -1062,16 +1094,15 @@ function fillFormFromAi(data,imgUrl){
     document.getElementById('f-opponents').value=data.matches.map(m=>m.opp||'').filter(Boolean).join('\n');
     data.matches.forEach(m=>addResultRow(m.opp||'',m.ko||'','','','',team));
   }
-  if(imgUrl){
-    document.getElementById('f-imgurl').value=imgUrl;
-    const prev=document.getElementById('img-preview');
-    prev.src=imgUrl;prev.style.display='block';
-    document.getElementById('img-area-txt').textContent='✅ AI読み込み済み';
+  const urls=Array.isArray(imgUrl)?imgUrl:(imgUrl?[imgUrl]:[]);
+  if(urls.length){
+    imgUrls=urls;syncImgurlField();renderImgThumbs();
+    document.getElementById('img-st').textContent='✅ AI読み込み済み（'+imgUrls.length+'枚）';
   }
 }
 
 function showAiResults(events,imgUrl){
-  window._aiEvs=events;window._aiImgUrl=imgUrl;
+  window._aiEvs=events;window._aiUrls=Array.isArray(imgUrl)?imgUrl:(imgUrl?[imgUrl]:[]);
   const body=document.getElementById('ai-modal-body');body.innerHTML='';
   events.forEach((ev,i)=>{
     const t=ev.team||team;
@@ -1087,7 +1118,7 @@ function showAiResults(events,imgUrl){
       const idx=parseInt(this.dataset.idx);
       this.disabled=true;this.textContent='✅ フォームを開いています...';
       document.getElementById('ai-modal').style.display='none';
-      fillFormFromAi(window._aiEvs[idx],idx===0?window._aiImgUrl:'');
+      fillFormFromAi(window._aiEvs[idx],idx===0?window._aiUrls:[]);
       showToast('✅ フォームに入力しました');
     });
     body.appendChild(card);
