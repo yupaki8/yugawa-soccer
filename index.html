@@ -778,7 +778,7 @@ function openDetail(id){
   if(ev.fee)h+='<div class="dr"><div class="dl">参加費等</div><div class="dv">'+ev.fee+'</div></div>';
   if(ev.mo)h+='<div class="dr"><div class="dl">持ち物・メモ</div><div class="dv" style="white-space:pre-wrap">'+ev.mo+'</div></div>';
   const detailImgs=parseImgurls(ev.imgurl||'');
-  if(detailImgs.length){h+='<div class="dr"><div class="dl">元データ</div><div class="dv"><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px">';detailImgs.forEach(url=>{h+='<a href="'+url+'" target="_blank" rel="noopener"><img src="'+driveThumbUrl(url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:7px;" onerror="this.style.display=\'none\'"></a>';});h+='</div></div></div>';}
+  if(detailImgs.length){h+='<div class="dr"><div class="dl">元データ</div><div class="dv"><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px">';detailImgs.forEach(url=>{h+='<a href="'+driveViewUrl(url)+'" target="_blank" rel="noopener"><img src="'+driveThumbUrl(url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:7px;" onerror="this.style.display=\'none\'"></a>';});h+='</div></div></div>';}
   h+='<button class="edb '+t+'" onclick="openEdit(\''+id+'\')">✏️ 編集</button>';
   h+='<button class="delb" onclick="delEv(\''+id+'\')">🗑 削除</button>';
   document.getElementById('dm-body').innerHTML=h;
@@ -898,10 +898,20 @@ function renderStats(){
 // ===== 画像アップロード =====
 let imgUrls=[], _uploading=0;
 
+function driveFileId(url){
+  if(!url)return null;
+  const m=url.match(/[?&]id=([a-zA-Z0-9_-]+)/)||url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return m?m[1]:null;
+}
 function driveThumbUrl(url){
   if(!url||url.startsWith('data:'))return url;
-  const m=url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  return m?'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w400':url;
+  const id=driveFileId(url);
+  return id?'https://lh3.googleusercontent.com/d/'+id+'=w400':url;
+}
+function driveViewUrl(url){
+  if(!url||url.startsWith('data:'))return url;
+  const id=driveFileId(url);
+  return id?'https://drive.google.com/file/d/'+id+'/view':url;
 }
 function parseImgurls(str){
   if(!str)return[];
