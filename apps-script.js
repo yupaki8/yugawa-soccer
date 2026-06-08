@@ -45,6 +45,12 @@ function doPost(e) {
       if (!firstRow || firstRow[0] !== headers[0]) {
         ws.clearContents();
         ws.appendRow(headers);
+      } else {
+        // 不足している列をシートに追加（スキーマ追加への自動対応）
+        var missingCols = headers.filter(function(h) { return firstRow.indexOf(h) === -1; });
+        if (missingCols.length > 0) {
+          ws.getRange(1, firstRow.length + 1, 1, missingCols.length).setValues([missingCols]);
+        }
       }
     }
 
