@@ -778,7 +778,7 @@ function openDetail(id){
   if(ev.fee)h+='<div class="dr"><div class="dl">参加費等</div><div class="dv">'+ev.fee+'</div></div>';
   if(ev.mo)h+='<div class="dr"><div class="dl">持ち物・メモ</div><div class="dv" style="white-space:pre-wrap">'+ev.mo+'</div></div>';
   const detailImgs=parseImgurls(ev.imgurl||'');
-  if(detailImgs.length){h+='<div class="dr"><div class="dl">元データ</div><div class="dv"><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px">';detailImgs.forEach(url=>{h+='<a href="'+url+'" target="_blank" rel="noopener"><img src="'+url+'" style="width:80px;height:80px;object-fit:cover;border-radius:7px;" onerror="this.style.display=\'none\'"></a>';});h+='</div></div></div>';}
+  if(detailImgs.length){h+='<div class="dr"><div class="dl">元データ</div><div class="dv"><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px">';detailImgs.forEach(url=>{h+='<a href="'+url+'" target="_blank" rel="noopener"><img src="'+driveThumbUrl(url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:7px;" onerror="this.style.display=\'none\'"></a>';});h+='</div></div></div>';}
   h+='<button class="edb '+t+'" onclick="openEdit(\''+id+'\')">✏️ 編集</button>';
   h+='<button class="delb" onclick="delEv(\''+id+'\')">🗑 削除</button>';
   document.getElementById('dm-body').innerHTML=h;
@@ -898,6 +898,11 @@ function renderStats(){
 // ===== 画像アップロード =====
 let imgUrls=[], _uploading=0;
 
+function driveThumbUrl(url){
+  if(!url||url.startsWith('data:'))return url;
+  const m=url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  return m?'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w400':url;
+}
 function parseImgurls(str){
   if(!str)return[];
   str=str.trim();
@@ -913,7 +918,7 @@ function renderImgThumbs(){
   const thumbs=document.getElementById('img-thumbs');thumbs.innerHTML='';
   imgUrls.forEach((url,i)=>{
     const wrap=document.createElement('div');wrap.className='img-thumb-wrap';
-    const img=document.createElement('img');img.src=url;img.alt='';
+    const img=document.createElement('img');img.src=driveThumbUrl(url);img.alt='';
     img.onerror=function(){this.style.opacity='0.3';};
     const rm=document.createElement('button');rm.type='button';rm.className='img-thumb-rm';rm.textContent='✕';
     rm.onclick=function(e){e.stopPropagation();imgUrls.splice(i,1);syncImgurlField();renderImgThumbs();};
