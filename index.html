@@ -200,8 +200,8 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 
 <div class="hdr fa" id="hdr">
   <div>
-    <div class="hdr-title" id="hdr-title">⚽ 湯川FA</div>
-    <div class="hdr-sub">サッカースケジュール</div>
+    <div class="hdr-title">⚽🏫 湯川サッカー</div>
+    <div class="hdr-sub">スケジュール管理</div>
   </div>
   <div class="hdr-btns">
     <button class="hb hb-s" onclick="showTab('settings')">⚙</button>
@@ -210,14 +210,6 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
-<div class="tsw">
-  <button class="tt afa" id="tt-fa" onclick="switchTeam('fa')">
-    ⚽ 湯川FA <span class="tbadge tbadge-fa" id="cnt-fa">0</span>
-  </button>
-  <button class="tt" id="tt-chu" onclick="switchTeam('chu')">
-    🏫 湯川中 <span class="tbadge tbadge-chu" id="cnt-chu">0</span>
-  </button>
-</div>
 
 <div class="nav">
   <button class="nt afa" id="nt-cal"      onclick="showTab('cal')">📅 カレンダー</button>
@@ -262,6 +254,10 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 <!-- 成績 -->
 <div id="view-stats" style="display:none">
   <div class="stats-panel">
+    <div class="tys" style="margin-bottom:10px">
+      <button class="tyb aofa" id="st-btn-fa" onclick="switchTeam('fa')">⚽ 湯川FA</button>
+      <button class="tyb" id="st-btn-chu" onclick="switchTeam('chu')">🏫 湯川中</button>
+    </div>
     <div class="cat-filter" id="cat-filter"></div>
     <div class="stats-grid" id="stats-grid"></div>
     <div class="wdl-bar" id="wdl-bar"></div>
@@ -333,6 +329,12 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div class="mbody">
       <div class="tbn fa" id="fm-banner">⚽ 湯川FA の試合</div>
+      <div class="fg"><label class="fl">チーム</label>
+        <div class="tys">
+          <button type="button" class="tyb aofa" id="ty-fa" onclick="selFormTeam('fa')">⚽ 湯川FA</button>
+          <button type="button" class="tyb" id="ty-chu" onclick="selFormTeam('chu')">🏫 湯川中</button>
+        </div>
+      </div>
       <div class="fg"><label class="fl">種別</label>
         <div class="tys">
           <button class="tyb aofa" id="tb-of" onclick="selType('of')">公式戦</button>
@@ -569,26 +571,22 @@ function saveSettings(){
 // ===== チーム・タブ =====
 function switchTeam(t){
   team=t;
-  document.getElementById('hdr').className='hdr '+t;
-  document.getElementById('hdr-title').textContent=TI[t].i+' '+TI[t].n;
-  document.getElementById('tt-fa').className='tt'+(t==='fa'?' afa':'');
-  document.getElementById('tt-chu').className='tt'+(t==='chu'?' achu':'');
-  document.getElementById('cp').className='cnb '+t;
-  document.getElementById('cn').className='cnb '+t;
-  document.getElementById('cml').className='cml '+t;
-  document.getElementById('nadd-btn').className='nadd '+t;
-  updCnts(); updNav(); renderCal(); renderList();
-  if(tab==='stats') renderStats();
-  if(tab==='notice') renderNotices();
+  const stFa=document.getElementById('st-btn-fa'),stChu=document.getElementById('st-btn-chu');
+  if(stFa)stFa.className='tyb'+(t==='fa'?' aofa':'');
+  if(stChu)stChu.className='tyb'+(t==='chu'?' aochu':'');
+  if(tab==='stats')renderStats();
 }
-
-function updCnts(){
-  const now=new Date(),y=now.getFullYear(),m2=now.getMonth();
-  ['fa','chu'].forEach(t2=>{
-    const c=evs.filter(e=>e.team===t2&&e.date&&(()=>{const d=new Date(e.date+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m2;})()).length;
-    document.getElementById('cnt-'+t2).textContent=c;
-  });
+function selFormTeam(t){
+  team=t;
+  document.getElementById('ty-fa').className='tyb'+(t==='fa'?' aofa':'');
+  document.getElementById('ty-chu').className='tyb'+(t==='chu'?' aochu':'');
+  const info=TI[t];
+  document.getElementById('fm-banner').className='tbn '+t;
+  document.getElementById('fm-banner').textContent=info.i+' '+info.n+' の試合';
+  document.getElementById('f-cat').value=t==='chu'?'U15':'U11';
+  setFmColor(t);
 }
+function updCnts(){}
 
 function showTab(t){
   tab=t;
@@ -602,7 +600,7 @@ function showTab(t){
 
 function updNav(){
   ['cal','notice','stats','settings'].forEach(v=>{
-    document.getElementById('nt-'+v).className='nt'+(v===tab?' a'+team:'');
+    document.getElementById('nt-'+v).className='nt'+(v===tab?' afa':'');
   });
 }
 
@@ -615,24 +613,24 @@ function renderCal(){
   while(grid.children.length>7)grid.removeChild(grid.lastChild);
   const today=new Date(),first=new Date(cy,cm,1).getDay(),days=new Date(cy,cm+1,0).getDate();
   const evDays={};
-  evs.filter(e=>e.team===team).forEach(e=>{
+  evs.forEach(e=>{
     if(!e.date)return;
     const d=new Date(e.date+'T00:00:00');
-    if(d.getFullYear()===cy&&d.getMonth()===cm){const n=d.getDate();if(!evDays[n])evDays[n]=[];evDays[n].push(e.type||'of');}
+    if(d.getFullYear()===cy&&d.getMonth()===cm){const n=d.getDate();if(!evDays[n])evDays[n]=[];evDays[n].push({tp:e.type||'of',team:e.team||'fa'});}
   });
   for(let i=0;i<first;i++){const c=document.createElement('div');c.className='cday empty';grid.appendChild(c);}
   for(let d=1;d<=days;d++){
     const dow=(first+d-1)%7,c=document.createElement('div');
-    let cls='cday h'+team;
+    let cls='cday hfa';
     if(dow===0)cls+=' sun';if(dow===6)cls+=' sat';
-    if(today.getFullYear()===cy&&today.getMonth()===cm&&today.getDate()===d)cls+=' t'+team;
+    if(today.getFullYear()===cy&&today.getMonth()===cm&&today.getDate()===d)cls+=' tfa';
     c.className=cls;
     const n=document.createElement('div');n.className='dn';n.textContent=d;c.appendChild(n);
     if(evDays[d]){
       const dd=document.createElement('div');dd.className='ddots';
-      [...new Set(evDays[d])].slice(0,3).forEach(tp=>{
+      evDays[d].slice(0,3).forEach(({tp,team:t})=>{
         const dot=document.createElement('div');
-        dot.className='dd '+(tp==='of'?'d'+team:tp==='tr'?'dtrm':'doth');
+        dot.className='dd '+(tp==='of'?'d'+t:tp==='tr'?'dtrm':'doth');
         dd.appendChild(dot);
       });
       c.appendChild(dd);
@@ -645,31 +643,26 @@ function renderCal(){
 
 function renderList(){
   const con=document.getElementById('elist');con.innerHTML='';
-  const month=evs.filter(e=>e.team===team&&e.date&&(()=>{const d=new Date(e.date+'T00:00:00');return d.getFullYear()===cy&&d.getMonth()===cm;})()).sort((a,b)=>a.date.localeCompare(b.date));
-  const info=TI[team];
+  const month=evs.filter(e=>e.date&&(()=>{const d=new Date(e.date+'T00:00:00');return d.getFullYear()===cy&&d.getMonth()===cm;})()).sort((a,b)=>a.date.localeCompare(b.date));
   if(!month.length){
-    const otherTeam=team==='fa'?'chu':'fa';
-    const otherCount=evs.filter(e=>e.team===otherTeam&&e.date&&(()=>{const d=new Date(e.date+'T00:00:00');return d.getFullYear()===cy&&d.getMonth()===cm;})()).length;
-    const allOther=evs.filter(e=>e.team===otherTeam).length;
-    const hint=otherCount>0?'<div style="margin-top:8px;font-size:11px;color:var(--muted);">'+TI[otherTeam].n+'に'+otherCount+'件あります</div>'
-      :allOther>0?'<div style="margin-top:8px;font-size:11px;color:var(--muted);">'+TI[otherTeam].n+'に別の月で'+allOther+'件あります</div>':'';
-    con.innerHTML='<div class="sl">'+cy+'年'+MN[cm]+'の試合</div><div class="empty-st"><div class="ei">'+info.i+'</div><div>'+info.n+'の試合はまだありません</div>'+hint+'</div>';
+    con.innerHTML='<div class="sl">'+cy+'年'+MN[cm]+'の試合</div><div class="empty-st"><div class="ei">⚽</div><div>この月の試合はありません</div></div>';
     return;
   }
-  const sec=document.createElement('div');sec.innerHTML='<div class="sl">'+info.n+'｜'+cy+'年'+MN[cm]+'（'+month.length+'件）</div>';con.appendChild(sec);
+  const sec=document.createElement('div');sec.innerHTML='<div class="sl">'+cy+'年'+MN[cm]+'（'+month.length+'件）</div>';con.appendChild(sec);
   month.forEach(e=>{
+    const t=e.team||'fa',info=TI[t];
     const d=new Date(e.date+'T00:00:00'),tp=e.type||'of';
     const tpL={of:'公式戦',tr:'TRM',ot:'その他'}[tp];
-    const bCls=tp==='of'?'b'+(team==='fa'?'fa':'ch')+'o':tp==='tr'?'btrm':'both';
-    const dcCls=team+(tp==='of'?'of':tp==='tr'?'tr':'ot');
+    const bCls=tp==='of'?'b'+(t==='fa'?'fa':'ch')+'o':tp==='tr'?'btrm':'both';
+    const dcCls=t+(tp==='of'?'of':tp==='tr'?'tr':'ot');
     const evResults=e.results?JSON.parse(e.results):[];
     const scored=evResults.filter(r=>r.us!==''&&r.th!==''&&!isNaN(parseInt(r.us))&&!isNaN(parseInt(r.th)));
-    const card=document.createElement('div');card.className='ec e'+team;card.dataset.date=e.date;
+    const card=document.createElement('div');card.className='ec e'+t;card.dataset.date=e.date;
     let sc='';
     if(scored.length===1){const r=scored[0],us=parseInt(r.us),th=parseInt(r.th),res=us>th?'win':us<th?'lose':'draw';const rl={win:'勝',lose:'負',draw:'分'};sc='<div class="escore"><div class="sv '+res+'">'+us+'-'+th+'</div><div class="sl2 '+res+'">'+rl[res]+'</div></div>';}
     else if(scored.length>1){let w=0,dr=0,l=0;scored.forEach(r=>{const us=parseInt(r.us),th=parseInt(r.th);if(us>th)w++;else if(us===th)dr++;else l++;});sc='<div class="escore"><div class="sv" style="font-size:12px;color:var(--text)">'+scored.length+'試合</div><div class="sl2" style="background:#f0f0f0;color:var(--muted)">'+w+'勝'+dr+'分'+l+'負</div></div>';}
     let meta='';if(e.ga)meta+='<span>⏰'+e.ga+'</span>';if(e.dismiss)meta+='<span>🏁'+e.dismiss+'</span>';if(e.ve)meta+='<span>📍'+e.ve+'</span>';if(e.cat)meta+='<span>🏷'+e.cat+'</span>';if(e.fee)meta+='<span>💴'+e.fee+'</span>';if(parseImgurls(e.imgurl||'').length)meta+='<span>📎</span>';
-    card.innerHTML='<div class="ein"><div class="edc '+dcCls+'"><div class="em">'+MN[d.getMonth()]+'</div><div class="ed '+team+'">'+d.getDate()+'</div><div class="edw">'+DOWS[d.getDay()]+'</div></div><div class="eb"><span class="tchip tchip-'+team+'">'+info.n+'</span><span class="tbdg '+bCls+'">'+tpL+'</span><div class="et">'+(e.ttl||'（タイトルなし）')+'</div>'+(meta?'<div class="emeta">'+meta+'</div>':'')+'</div>'+sc+'</div>';
+    card.innerHTML='<div class="ein"><div class="edc '+dcCls+'"><div class="em">'+MN[d.getMonth()]+'</div><div class="ed '+t+'">'+d.getDate()+'</div><div class="edw">'+DOWS[d.getDay()]+'</div></div><div class="eb"><span class="tchip tchip-'+t+'">'+info.n+'</span><span class="tbdg '+bCls+'">'+tpL+'</span><div class="et">'+(e.ttl||'（タイトルなし）')+'</div>'+(meta?'<div class="emeta">'+meta+'</div>':'')+'</div>'+sc+'</div>';
     card.addEventListener('click',()=>openDetail(e.id));con.appendChild(card);
   });
 }
@@ -686,6 +679,8 @@ function openNew(){
   document.getElementById('img-st').textContent='';renderImgThumbs();
   document.getElementById('f-dt').value=new Date().toISOString().slice(0,10);
   document.getElementById('f-cat').value=t==='chu'?'U15':'U11';
+  document.getElementById('ty-fa').className='tyb'+(t==='fa'?' aofa':'');
+  document.getElementById('ty-chu').className='tyb'+(t==='chu'?' aochu':'');
   setFmColor(t);selType('of');
   document.getElementById('fm').classList.add('open');
 }
@@ -809,6 +804,8 @@ function openEdit(id){
   document.getElementById('img-st').textContent=imgUrls.length?'✅ '+imgUrls.length+'枚（変更可）':'';
   document.getElementById('f-mo').value=ev.mo||'';
   document.getElementById('f-cat').value=ev.cat||'U11';
+  document.getElementById('ty-fa').className='tyb'+(t==='fa'?' aofa':'');
+  document.getElementById('ty-chu').className='tyb'+(t==='chu'?' aochu':'');
   setFmColor(t);selType(ev.type||'of');
   document.getElementById('fm').classList.add('open');
 }
@@ -1108,7 +1105,7 @@ async function aiAnalyze(){
 }
 
 function fillFormFromAi(data,imgUrl){
-  if(data.team&&data.team!==team)switchTeam(data.team);
+  if(data.team)team=data.team;
   openNew();
   if(data.type)selType(data.type);
   const fm={cat:'f-cat',date:'f-dt',ttl:'f-ttl',ga:'f-ga',gv:'f-gv',dismiss:'f-dismiss',ve:'f-ve',gl:'f-gl',fee:'f-fee',mo:'f-mo'};
@@ -1156,7 +1153,7 @@ function loadFromParams(){
   const p=new URLSearchParams(window.location.search);
   if(p.get('new')!=='1')return;
   const t=p.get('team')||'fa';
-  if(t!==team)switchTeam(t);
+  team=t;
   openNew();
   const tp=p.get('type');if(tp)selType(tp);
   if(p.get('cat'))document.getElementById('f-cat').value=p.get('cat');
