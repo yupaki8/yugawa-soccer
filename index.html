@@ -12,7 +12,7 @@
   --chu:#1a4b8c;--chu-l:#e6eef8;--chu-m:#2d6bbf;
   --acc:#f0a500;--acc-l:#fff8e6;
   --bg:#f2f4f2;--card:#fff;--text:#1a1a1a;--muted:#6b7280;--border:#e2e8e4;
-  --win:#2d9e5f;--lose:#e24b4a;--draw:#ba7517;--trm:#8b5cf6;
+  --win:#2d9e5f;--lose:#e24b4a;--draw:#ba7517;--trm:#8b5cf6;--cup:#e05c00;
   --r:12px;
 }
 body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);}
@@ -60,15 +60,15 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .dn{font-size:11px;font-weight:500;line-height:18px;}
 .ddots{display:flex;gap:2px;margin-top:2px;flex-wrap:wrap;justify-content:center;}
 .dd{width:5px;height:5px;border-radius:50%;}
-.dfa{background:var(--fa-m);}.dchu{background:var(--chu-m);}.dtrm{background:var(--trm);}.doth{background:var(--acc);}
+.dfa{background:var(--fa-m);}.dchu{background:var(--chu-m);}.dtrm{background:var(--trm);}.dcup{background:var(--cup);}.doth{background:var(--acc);}
 .sl{font-size:11px;font-weight:700;color:var(--muted);padding:11px 16px 5px;letter-spacing:.5px;}
 .ec{margin:0 10px 8px;background:var(--card);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:box-shadow .15s,transform .1s;border:1px solid var(--border);}
 .ec:hover{box-shadow:0 2px 12px rgba(0,0,0,.09);transform:translateY(-1px);}
 .ec.efa{border-left:4px solid var(--fa);}.ec.echu{border-left:4px solid var(--chu);}
 .ein{display:flex;align-items:stretch;}
 .edc{width:50px;min-width:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 5px;}
-.edc.faof{background:var(--fa-l);}.edc.fatr{background:#f3f0ff;}.edc.faot{background:var(--acc-l);}
-.edc.chuof{background:var(--chu-l);}.edc.chutr{background:#f3f0ff;}.edc.chuot{background:var(--acc-l);}
+.edc.faof{background:var(--fa-l);}.edc.fatr{background:#f3f0ff;}.edc.facu{background:#fff0e6;}.edc.faot{background:var(--acc-l);}
+.edc.chuof{background:var(--chu-l);}.edc.chutr{background:#f3f0ff;}.edc.chucu{background:#fff0e6;}.edc.chuot{background:var(--acc-l);}
 .em{font-size:9px;font-weight:700;color:var(--muted);}
 .ed{font-size:19px;font-weight:700;line-height:1;}
 .ed.fa{color:var(--fa);}.ed.chu{color:var(--chu);}
@@ -78,7 +78,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .tchip-fa{background:var(--fa-l);color:var(--fa);}.tchip-chu{background:var(--chu-l);color:var(--chu);}
 .tbdg{display:inline-block;font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;margin-left:3px;margin-bottom:2px;}
 .bfao{background:#d4edde;color:#145c30;}.bcho{background:#d0e4f7;color:#103d75;}
-.btrm{background:#ede9fe;color:#5b21b6;}.both{background:var(--acc-l);color:#8a5e00;}
+.btrm{background:#ede9fe;color:#5b21b6;}.bcup{background:#fff0e6;color:#a63d00;}.both{background:var(--acc-l);color:#8a5e00;}
 .et{font-size:13px;font-weight:700;line-height:1.3;margin-bottom:2px;}
 .emeta{font-size:11px;color:var(--muted);display:flex;gap:7px;flex-wrap:wrap;}
 .escore{display:flex;align-items:center;justify-content:center;flex-direction:column;padding:0 9px;gap:2px;min-width:48px;}
@@ -155,6 +155,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .tyb.aofa{border-color:var(--fa);background:var(--fa-l);color:var(--fa);}
 .tyb.aochu{border-color:var(--chu);background:var(--chu-l);color:var(--chu);}
 .tyb.at{border-color:var(--trm);background:#ede9fe;color:#5b21b6;}
+.tyb.acu{border-color:var(--cup);background:#fff0e6;color:var(--cup);}
 .tyb.ao{border-color:var(--acc);background:var(--acc-l);color:#8a5e00;}
 .sav{width:100%;margin-top:13px;color:#fff;border:none;border-radius:11px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;display:flex;align-items:center;justify-content:center;gap:5px;}
 .sav.fa{background:var(--fa);}.sav.chu{background:var(--chu);}
@@ -193,6 +194,11 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .img-add-btn{width:100%;padding:10px;border:2px dashed var(--border);border-radius:9px;background:none;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;transition:border-color .2s,color .2s;}
 .img-add-btn.fa:hover{border-color:var(--fa);color:var(--fa);}.img-add-btn.chu:hover{border-color:var(--chu);color:var(--chu);}
 .img-st{font-size:11px;margin-top:5px;min-height:14px;}
+.sub-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+.dft-btn{width:100%;background:none;border-radius:11px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+.dft-btn.fa{color:var(--fa);border:1.5px solid var(--fa);}.dft-btn.chu{color:var(--chu);border:1.5px solid var(--chu);}
+.cnc-btn{width:100%;background:none;border:1.5px solid var(--border);border-radius:11px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;}
+.cnc-btn:hover{background:var(--bg);}
 </style>
 </head>
 <body>
@@ -328,7 +334,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <button class="mclose" onclick="closeFm()">&#10005;</button>
     </div>
     <div class="mbody">
-      <div class="tbn fa" id="fm-banner">⚽ 湯川FA の試合</div>
+<div class="tbn fa" id="fm-banner">⚽ 湯川FA の試合</div>
       <div class="fg"><label class="fl">チーム</label>
         <div class="tys">
           <button type="button" class="tyb aofa" id="ty-fa" onclick="selFormTeam('fa')">⚽ 湯川FA</button>
@@ -339,6 +345,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <div class="tys">
           <button class="tyb aofa" id="tb-of" onclick="selType('of')">公式戦</button>
           <button class="tyb" id="tb-tr" onclick="selType('tr')">TRM</button>
+          <button class="tyb" id="tb-cu" onclick="selType('cu')">カップ戦</button>
           <button class="tyb" id="tb-ot" onclick="selType('ot')">その他</button>
         </div>
       </div>
@@ -401,6 +408,10 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <button class="sav fa" id="sav-btn" onclick="saveEv()">
         <span id="sav-txt">💾 保存</span>
       </button>
+      <div class="sub-btns">
+        <button class="dft-btn fa" id="dft-btn" onclick="saveDraft()">📋 一時保存</button>
+        <button class="cnc-btn" onclick="closeFm()">キャンセル</button>
+      </div>
     </div>
   </div>
 </div>
@@ -434,6 +445,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <textarea class="fta fa" id="n-body" placeholder="例：次回の試合は弁当持参です。&#10;集合場所：学校正門前" style="min-height:120px"></textarea>
       </div>
       <button class="sav fa" id="nsav-btn" onclick="saveNotice()">💾 保存</button>
+      <button class="cnc-btn" onclick="closeNm()" style="margin-top:8px">キャンセル</button>
     </div>
   </div>
 </div>
@@ -630,7 +642,7 @@ function renderCal(){
       const dd=document.createElement('div');dd.className='ddots';
       evDays[d].slice(0,3).forEach(({tp,team:t})=>{
         const dot=document.createElement('div');
-        dot.className='dd '+(tp==='of'?'d'+t:tp==='tr'?'dtrm':'doth');
+        dot.className='dd '+(tp==='of'?'d'+t:tp==='tr'?'dtrm':tp==='cu'?'dcup':'doth');
         dd.appendChild(dot);
       });
       c.appendChild(dd);
@@ -652,9 +664,9 @@ function renderList(){
   month.forEach(e=>{
     const t=e.team||'fa',info=TI[t];
     const d=new Date(e.date+'T00:00:00'),tp=e.type||'of';
-    const tpL={of:'公式戦',tr:'TRM',ot:'その他'}[tp];
-    const bCls=tp==='of'?'b'+(t==='fa'?'fa':'ch')+'o':tp==='tr'?'btrm':'both';
-    const dcCls=t+(tp==='of'?'of':tp==='tr'?'tr':'ot');
+    const tpL={of:'公式戦',tr:'TRM',cu:'カップ戦',ot:'その他'}[tp];
+    const bCls=tp==='of'?'b'+(t==='fa'?'fa':'ch')+'o':tp==='tr'?'btrm':tp==='cu'?'bcup':'both';
+    const dcCls=t+(tp==='of'?'of':tp==='tr'?'tr':tp==='cu'?'cu':'ot');
     const evResults=e.results?JSON.parse(e.results):[];
     const scored=evResults.filter(r=>r.us!==''&&r.th!==''&&!isNaN(parseInt(r.us))&&!isNaN(parseInt(r.th)));
     const card=document.createElement('div');card.className='ec e'+t;card.dataset.date=e.date;
@@ -699,12 +711,14 @@ function setFmColor(t){
   document.getElementById('radd-btn').className='radd '+t;
   const ia=document.getElementById('img-area');ia.className=ia.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;
   const ab=document.getElementById('img-add-btn');ab.className=ab.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;
+  document.getElementById('dft-btn').className='dft-btn '+t;
 }
 
 function selType(tp){
   selType_v=tp;const t=team;
   document.getElementById('tb-of').className='tyb'+(tp==='of'?' ao'+t:'');
   document.getElementById('tb-tr').className='tyb'+(tp==='tr'?' at':'');
+  document.getElementById('tb-cu').className='tyb'+(tp==='cu'?' acu':'');
   document.getElementById('tb-ot').className='tyb'+(tp==='ot'?' ao':'');
 }
 
@@ -747,8 +761,8 @@ async function saveEv(){
 function openDetail(id){
   const ev=evs.find(e=>e.id===id);if(!ev)return;
   const d=new Date(ev.date+'T00:00:00'),t=ev.team||'fa',info=TI[t],tp=ev.type||'of';
-  const tpL={of:'公式戦',tr:'TRM',ot:'その他'}[tp];
-  const bCls=tp==='of'?'b'+(t==='fa'?'fa':'ch')+'o':tp==='tr'?'btrm':'both';
+  const tpL={of:'公式戦',tr:'TRM',cu:'カップ戦',ot:'その他'}[tp];
+  const bCls=tp==='of'?'b'+(t==='fa'?'fa':'ch')+'o':tp==='tr'?'btrm':tp==='cu'?'bcup':'both';
   const evResults=ev.results?JSON.parse(ev.results):[];
   const scored=evResults.filter(r=>r.us!==''&&r.th!==''&&!isNaN(parseInt(r.us))&&!isNaN(parseInt(r.th)));
   document.getElementById('dm-title').textContent=ev.ttl||'試合詳細';
@@ -1000,6 +1014,42 @@ function addResultRow(opp,ko,us,th,scorers,t){
   const scIn=document.createElement('input');scIn.className='fi '+t+' r-scorers';scIn.placeholder='得点者（例: 田中 ×2, 鈴木）';scIn.value=scorers;
   row.appendChild(top);row.appendChild(scIn);
   list.appendChild(row);
+}
+
+// ===== 一時保存（スプレッドシートに保存・画面は閉じない） =====
+async function saveDraft(){
+  if(_uploading>0){showToast('⏳ 画像をアップロード中です。完了後に保存してください');return;}
+  const ttl=document.getElementById('f-ttl').value.trim(),dt=document.getElementById('f-dt').value;
+  const dateOk=/^\d{4}-\d{2}-\d{2}$/.test(dt);
+  if(!ttl||!dt||!dateOk){showToast('タイトルと日付（YYYY-MM-DD形式）は必須です');return;}
+  const btn=document.getElementById('dft-btn');btn.disabled=true;btn.textContent='⏳ 保存中...';
+  const rrows=document.querySelectorAll('#results-list .rrow');
+  const results=[];
+  rrows.forEach(row=>{const opp=row.querySelector('.r-opp').value.trim(),ko=row.querySelector('.r-time').value,us=row.querySelector('.r-us').value,th=row.querySelector('.r-th').value,scorers=row.querySelector('.r-scorers').value.trim();if(opp||ko||us!==''||th!=='')results.push({opp,ko,us,th,scorers});});
+  const newId=eid||gid();
+  const ev={id:newId,team,type:selType_v,ttl,date:dt,
+    cat:document.getElementById('f-cat').value,
+    ga:document.getElementById('f-ga').value,
+    gv:document.getElementById('f-gv').value,
+    dismiss:document.getElementById('f-dismiss').value,
+    ve:document.getElementById('f-ve').value.trim(),
+    vemap:document.getElementById('f-vemap').value.trim(),
+    gl:document.getElementById('f-gl').value.trim(),
+    opponents:document.getElementById('f-opponents').value.trim(),
+    fee:document.getElementById('f-fee').value.trim(),
+    imgurl:document.getElementById('f-imgurl').value.trim(),
+    results:JSON.stringify(results),
+    mo:document.getElementById('f-mo').value.trim()};
+  const ok=await gasPost({action:'save',sheet:'events',data:ev});
+  if(ok){
+    if(eid){const i=evs.findIndex(e=>e.id===eid);if(i>=0)evs[i]=ev;}else{eid=newId;evs.push(ev);}
+    saveCache();
+    showToast('📋 一時保存しました');
+    updCnts();renderCal();renderList();
+  }else{
+    showToast(GAS_URL?'❌ 保存失敗（URLを確認）':'❌ Apps Script URLが未設定');
+  }
+  btn.disabled=false;btn.textContent='📋 一時保存';
 }
 
 // ===== ユーティリティ =====

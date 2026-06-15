@@ -18,7 +18,7 @@
 | パラメータ | 要素ID | 型 | 説明 |
 |---|---|---|---|
 | team | - | fa/chu | チーム（湯川FA/湯川中学校） |
-| type | - | of/tr/ot | 種別（公式戦/TRM/その他） |
+| type | - | of/tr/cu/ot | 種別（公式戦/TRM/カップ戦/その他） |
 | cat | f-cat | select | カテゴリ（U15/U12/U11/U10/その他） |
 | date | f-dt | text | 日付 YYYY-MM-DD |
 | ttl | f-ttl | text | タイトル/大会名 |
