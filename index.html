@@ -194,6 +194,15 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .img-add-btn{width:100%;padding:10px;border:2px dashed var(--border);border-radius:9px;background:none;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;transition:border-color .2s,color .2s;}
 .img-add-btn.fa:hover{border-color:var(--fa);color:var(--fa);}.img-add-btn.chu:hover{border-color:var(--chu);color:var(--chu);}
 .img-st{font-size:11px;margin-top:5px;min-height:14px;}
+.draft-banner{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff8e6;border:1px solid #fcd34d;border-radius:9px;padding:10px 12px;margin-bottom:10px;font-size:12px;}
+.draft-ban-btns{display:flex;gap:6px;flex-shrink:0;}
+.dba{border:none;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+.dba-r{background:var(--acc);color:#1a1a1a;}.dba-d{background:none;border:1px solid var(--border);color:var(--muted);}
+.sub-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+.dft-btn{width:100%;background:none;border-radius:11px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+.dft-btn.fa{color:var(--fa);border:1.5px solid var(--fa);}.dft-btn.chu{color:var(--chu);border:1.5px solid var(--chu);}
+.cnc-btn{width:100%;background:none;border:1.5px solid var(--border);border-radius:11px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;}
+.cnc-btn:hover{background:var(--bg);}
 </style>
 </head>
 <body>
@@ -329,6 +338,13 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <button class="mclose" onclick="closeFm()">&#10005;</button>
     </div>
     <div class="mbody">
+      <div id="fm-draft-banner" class="draft-banner" style="display:none">
+        <span class="draft-msg">📋 一時保存のデータがあります</span>
+        <div class="draft-ban-btns">
+          <button class="dba dba-r" onclick="restoreDraft()">復元</button>
+          <button class="dba dba-d" onclick="discardDraft()">破棄</button>
+        </div>
+      </div>
       <div class="tbn fa" id="fm-banner">⚽ 湯川FA の試合</div>
       <div class="fg"><label class="fl">チーム</label>
         <div class="tys">
@@ -403,6 +419,10 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <button class="sav fa" id="sav-btn" onclick="saveEv()">
         <span id="sav-txt">💾 保存</span>
       </button>
+      <div class="sub-btns">
+        <button class="dft-btn fa" id="dft-btn" onclick="saveDraft()">📋 一時保存</button>
+        <button class="cnc-btn" onclick="closeFm()">キャンセル</button>
+      </div>
     </div>
   </div>
 </div>
@@ -436,6 +456,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <textarea class="fta fa" id="n-body" placeholder="例：次回の試合は弁当持参です。&#10;集合場所：学校正門前" style="min-height:120px"></textarea>
       </div>
       <button class="sav fa" id="nsav-btn" onclick="saveNotice()">💾 保存</button>
+      <button class="cnc-btn" onclick="closeNm()" style="margin-top:8px">キャンセル</button>
     </div>
   </div>
 </div>
@@ -684,7 +705,9 @@ function openNew(){
   document.getElementById('ty-fa').className='tyb'+(t==='fa'?' aofa':'');
   document.getElementById('ty-chu').className='tyb'+(t==='chu'?' aochu':'');
   setFmColor(t);selType('of');
+  document.getElementById('fm-draft-banner').style.display='none';
   document.getElementById('fm').classList.add('open');
+  checkDraft();
 }
 function closeFm(){
   document.getElementById('fm').classList.remove('open');
@@ -701,6 +724,7 @@ function setFmColor(t){
   document.getElementById('radd-btn').className='radd '+t;
   const ia=document.getElementById('img-area');ia.className=ia.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;
   const ab=document.getElementById('img-add-btn');ab.className=ab.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;
+  document.getElementById('dft-btn').className='dft-btn '+t;
 }
 
 function selType(tp){
@@ -738,6 +762,7 @@ async function saveEv(){
   if(ok){
     if(eid){const i=evs.findIndex(e=>e.id===eid);if(i>=0)evs[i]=ev;}else{evs.push(ev);}
     saveCache();
+    localStorage.removeItem('yfa_draft');
     showToast('✅ 保存しました');
   } else {
     showToast(GAS_URL?'❌ 保存失敗（URLを確認）':'❌ Apps Script URLが未設定');
@@ -810,7 +835,9 @@ function openEdit(id){
   document.getElementById('ty-fa').className='tyb'+(t==='fa'?' aofa':'');
   document.getElementById('ty-chu').className='tyb'+(t==='chu'?' aochu':'');
   setFmColor(t);selType(ev.type||'of');
+  document.getElementById('fm-draft-banner').style.display='none';
   document.getElementById('fm').classList.add('open');
+  checkDraft();
 }
 
 async function delEv(id){
@@ -1003,6 +1030,79 @@ function addResultRow(opp,ko,us,th,scorers,t){
   const scIn=document.createElement('input');scIn.className='fi '+t+' r-scorers';scIn.placeholder='得点者（例: 田中 ×2, 鈴木）';scIn.value=scorers;
   row.appendChild(top);row.appendChild(scIn);
   list.appendChild(row);
+}
+
+// ===== 一時保存（ドラフト） =====
+function collectFormData(){
+  const rrows=document.querySelectorAll('#results-list .rrow');
+  const results=[];
+  rrows.forEach(row=>{
+    const opp=row.querySelector('.r-opp').value.trim(),ko=row.querySelector('.r-time').value,
+          us=row.querySelector('.r-us').value,th=row.querySelector('.r-th').value,
+          scorers=row.querySelector('.r-scorers').value.trim();
+    if(opp||ko||us!==''||th!=='')results.push({opp,ko,us,th,scorers});
+  });
+  return {
+    ttl:document.getElementById('f-ttl').value,
+    date:document.getElementById('f-dt').value,
+    cat:document.getElementById('f-cat').value,
+    ga:document.getElementById('f-ga').value,
+    gv:document.getElementById('f-gv').value,
+    dismiss:document.getElementById('f-dismiss').value,
+    ve:document.getElementById('f-ve').value,
+    vemap:document.getElementById('f-vemap').value,
+    gl:document.getElementById('f-gl').value,
+    opponents:document.getElementById('f-opponents').value,
+    fee:document.getElementById('f-fee').value,
+    mo:document.getElementById('f-mo').value,
+    results,
+    _imgUrls:imgUrls.filter(u=>u&&!u.startsWith('data:'))
+  };
+}
+
+function saveDraft(){
+  const data=collectFormData();
+  data._eid=eid;data._team=team;data._type=selType_v;
+  data._savedAt=new Date().toISOString();
+  try{localStorage.setItem('yfa_draft',JSON.stringify(data));}catch(e){showToast('❌ 一時保存に失敗しました（容量不足）');return;}
+  showToast('📋 一時保存しました');
+  closeFm();
+}
+
+function checkDraft(){
+  const raw=localStorage.getItem('yfa_draft');
+  if(!raw)return;
+  try{
+    const d=JSON.parse(raw);
+    if(d._eid!==eid)return;
+    const dt=d._savedAt?new Date(d._savedAt):null;
+    const dtStr=dt?(dt.getMonth()+1)+'月'+dt.getDate()+'日 '+dt.getHours()+':'+String(dt.getMinutes()).padStart(2,'0'):'';
+    const banner=document.getElementById('fm-draft-banner');
+    banner.querySelector('.draft-msg').textContent='📋 一時保存のデータがあります'+(dtStr?' ('+dtStr+')':'');
+    banner.style.display='';
+  }catch(e){localStorage.removeItem('yfa_draft');}
+}
+
+function restoreDraft(){
+  const raw=localStorage.getItem('yfa_draft');
+  if(!raw)return;
+  try{
+    const d=JSON.parse(raw);
+    if(d._team)selFormTeam(d._team);
+    if(d._type)selType(d._type);
+    const fm={cat:'f-cat',ttl:'f-ttl',date:'f-dt',ga:'f-ga',gv:'f-gv',dismiss:'f-dismiss',ve:'f-ve',vemap:'f-vemap',gl:'f-gl',opponents:'f-opponents',fee:'f-fee',mo:'f-mo'};
+    Object.entries(fm).forEach(([k,id])=>{if(d[k]!==undefined){const el=document.getElementById(id);if(el)el.value=d[k];}});
+    document.getElementById('results-list').innerHTML='';
+    if(d.results&&d.results.length)d.results.forEach(r=>addResultRow(r.opp,r.ko||'',r.us,r.th,r.scorers,team));
+    if(d._imgUrls&&d._imgUrls.length){imgUrls=d._imgUrls;syncImgurlField();renderImgThumbs();document.getElementById('img-st').textContent='✅ '+imgUrls.length+'枚（一時保存より）';}
+    document.getElementById('fm-draft-banner').style.display='none';
+    showToast('📋 一時保存データを復元しました');
+  }catch(e){discardDraft();}
+}
+
+function discardDraft(){
+  localStorage.removeItem('yfa_draft');
+  document.getElementById('fm-draft-banner').style.display='none';
 }
 
 // ===== ユーティリティ =====
