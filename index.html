@@ -60,10 +60,9 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .cday.bgboth{background:linear-gradient(to right,#d3ecdd 0 50%,#d4e3f7 50% 100%);}
 .cday:hover{filter:brightness(.95);}
 .dn{font-size:11px;font-weight:500;line-height:18px;}
-.ddots{position:absolute;left:3px;right:3px;bottom:3px;display:flex;justify-content:space-between;}
-.ddg{display:flex;gap:2px;}
-.dd{width:5px;height:5px;border-radius:50%;}
-.dfa{background:var(--fa);}.dchu{background:var(--chu);}.dtrm{background:var(--trm);}.dcup{background:var(--cup);}.doth{background:var(--acc);}
+.ddots{position:absolute;left:2px;right:2px;top:17px;bottom:2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+.tg{font-size:8px;font-weight:700;line-height:1.2;padding:1px 4px;border-radius:3px;white-space:nowrap;max-width:100%;border-left:3px solid transparent;}
+.tg.tfa{border-left-color:var(--fa);}.tg.tchu{border-left-color:var(--chu);}
 .sl{font-size:11px;font-weight:700;color:var(--muted);padding:11px 16px 5px;letter-spacing:.5px;}
 .ec{margin:0 10px 8px;background:var(--card);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:box-shadow .15s,transform .1s;border:1px solid var(--border);}
 .ec:hover{box-shadow:0 2px 12px rgba(0,0,0,.09);transform:translateY(-1px);}
@@ -649,19 +648,15 @@ function renderCal(){
     const n=document.createElement('div');n.className='dn';n.textContent=d;c.appendChild(n);
     if(evDays[d]){
       const dd=document.createElement('div');dd.className='ddots';
-      const gFa=document.createElement('div');gFa.className='ddg';
-      const gChu=document.createElement('div');gChu.className='ddg';
-      evDays[d].fa.slice(0,2).forEach(tp=>{
-        const dot=document.createElement('div');
-        dot.className='dd '+(tp==='of'?'dfa':tp==='tr'?'dtrm':tp==='cu'?'dcup':'doth');
-        gFa.appendChild(dot);
-      });
-      evDays[d].chu.slice(0,2).forEach(tp=>{
-        const dot=document.createElement('div');
-        dot.className='dd '+(tp==='of'?'dchu':tp==='tr'?'dtrm':tp==='cu'?'dcup':'doth');
-        gChu.appendChild(dot);
-      });
-      dd.appendChild(gFa);dd.appendChild(gChu);
+      const mkTag=(tp,t)=>{
+        const lbl=tp==='tr'?'TRM':tp==='cu'?'カップ':tp==='ot'?'その他':'公式戦';
+        const cls=tp==='tr'?'btrm':tp==='cu'?'bcup':tp==='ot'?'both':(t==='fa'?'bfao':'bcho');
+        const el=document.createElement('div');el.className='tg '+cls+' t'+t;el.textContent=lbl;return el;
+      };
+      const tags=[];
+      const fa=evDays[d].fa, chu=evDays[d].chu, mx=Math.max(fa.length,chu.length);
+      for(let i=0;i<mx;i++){if(fa[i]!==undefined)tags.push([fa[i],'fa']);if(chu[i]!==undefined)tags.push([chu[i],'chu']);}
+      tags.slice(0,2).forEach(([tp,t])=>dd.appendChild(mkTag(tp,t)));
       c.appendChild(dd);
       const ds=cy+'-'+String(cm+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
       c.addEventListener('click',()=>{
