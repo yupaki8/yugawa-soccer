@@ -51,17 +51,17 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
 .cdow{text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:4px 0;}
 .cdow:first-child{color:#e24b4a;}.cdow:last-child{color:#5b6af0;}
-.cday{aspect-ratio:1;border-radius:7px;padding:2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;min-height:36px;}
+.cday{aspect-ratio:1;border-radius:7px;padding:2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;min-height:36px;position:relative;}
 .cday.empty{cursor:default;pointer-events:none;}
 .cday.sun .dn{color:#e24b4a;}.cday.sat .dn{color:#5b6af0;}
 .cday.tfa .dn{background:var(--fa);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;}
 .cday.tchu .dn{background:var(--chu);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;}
 .cday.hfa:hover{background:var(--fa-l);}.cday.hchu:hover{background:var(--chu-l);}
 .dn{font-size:11px;font-weight:500;line-height:18px;}
-.ddots{display:flex;gap:2px;margin-top:2px;flex-wrap:wrap;justify-content:center;}
+.ddots{position:absolute;left:3px;right:3px;bottom:3px;display:flex;justify-content:space-between;}
+.ddg{display:flex;gap:2px;}
 .dd{width:5px;height:5px;border-radius:50%;}
 .dfa{background:var(--fa-m);}.dchu{background:var(--chu-m);}.dtrm{background:var(--trm);}.dcup{background:var(--cup);}.doth{background:var(--acc);}
-.dd.fa{border-radius:50%;}.dd.chu{border-radius:2px;}
 .sl{font-size:11px;font-weight:700;color:var(--muted);padding:11px 16px 5px;letter-spacing:.5px;}
 .ec{margin:0 10px 8px;background:var(--card);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:box-shadow .15s,transform .1s;border:1px solid var(--border);}
 .ec:hover{box-shadow:0 2px 12px rgba(0,0,0,.09);transform:translateY(-1px);}
@@ -629,7 +629,11 @@ function renderCal(){
   evs.forEach(e=>{
     if(!e.date)return;
     const d=new Date(e.date+'T00:00:00');
-    if(d.getFullYear()===cy&&d.getMonth()===cm){const n=d.getDate();if(!evDays[n])evDays[n]=[];evDays[n].push({tp:e.type||'of',team:e.team||'fa'});}
+    if(d.getFullYear()===cy&&d.getMonth()===cm){
+      const n=d.getDate();
+      if(!evDays[n])evDays[n]={fa:[],chu:[]};
+      evDays[n][e.team==='chu'?'chu':'fa'].push(e.type||'of');
+    }
   });
   for(let i=0;i<first;i++){const c=document.createElement('div');c.className='cday empty';grid.appendChild(c);}
   for(let d=1;d<=days;d++){
@@ -641,11 +645,19 @@ function renderCal(){
     const n=document.createElement('div');n.className='dn';n.textContent=d;c.appendChild(n);
     if(evDays[d]){
       const dd=document.createElement('div');dd.className='ddots';
-      evDays[d].slice(0,3).forEach(({tp,team:t})=>{
+      const gFa=document.createElement('div');gFa.className='ddg';
+      const gChu=document.createElement('div');gChu.className='ddg';
+      evDays[d].fa.slice(0,2).forEach(tp=>{
         const dot=document.createElement('div');
-        dot.className='dd '+(tp==='of'?'d'+t:tp==='tr'?'dtrm':tp==='cu'?'dcup':'doth')+' '+t;
-        dd.appendChild(dot);
+        dot.className='dd '+(tp==='of'?'dfa':tp==='tr'?'dtrm':tp==='cu'?'dcup':'doth');
+        gFa.appendChild(dot);
       });
+      evDays[d].chu.slice(0,2).forEach(tp=>{
+        const dot=document.createElement('div');
+        dot.className='dd '+(tp==='of'?'dchu':tp==='tr'?'dtrm':tp==='cu'?'dcup':'doth');
+        gChu.appendChild(dot);
+      });
+      dd.appendChild(gFa);dd.appendChild(gChu);
       c.appendChild(dd);
       const ds=cy+'-'+String(cm+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
       c.addEventListener('click',()=>{
