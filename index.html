@@ -56,12 +56,14 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .cday.sun .dn{color:#e24b4a;}.cday.sat .dn{color:#5b6af0;}
 .cday.tfa .dn{background:var(--fa);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;}
 .cday.tchu .dn{background:var(--chu);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;}
-.cday.hfa:hover{background:var(--fa-l);}.cday.hchu:hover{background:var(--chu-l);}
+.cday.bgfa{background:#d3ecdd;}.cday.bgchu{background:#d4e3f7;}
+.cday.bgboth{background:linear-gradient(to right,#d3ecdd 0 50%,#d4e3f7 50% 100%);}
+.cday:hover{filter:brightness(.95);}
 .dn{font-size:11px;font-weight:500;line-height:18px;}
 .ddots{position:absolute;left:3px;right:3px;bottom:3px;display:flex;justify-content:space-between;}
 .ddg{display:flex;gap:2px;}
 .dd{width:5px;height:5px;border-radius:50%;}
-.dfa{background:var(--fa-m);}.dchu{background:var(--chu-m);}.dtrm{background:var(--trm);}.dcup{background:var(--cup);}.doth{background:var(--acc);}
+.dfa{background:var(--fa);}.dchu{background:var(--chu);}.dtrm{background:var(--trm);}.dcup{background:var(--cup);}.doth{background:var(--acc);}
 .sl{font-size:11px;font-weight:700;color:var(--muted);padding:11px 16px 5px;letter-spacing:.5px;}
 .ec{margin:0 10px 8px;background:var(--card);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:box-shadow .15s,transform .1s;border:1px solid var(--border);}
 .ec:hover{box-shadow:0 2px 12px rgba(0,0,0,.09);transform:translateY(-1px);}
@@ -641,6 +643,8 @@ function renderCal(){
     let cls='cday hfa';
     if(dow===0)cls+=' sun';if(dow===6)cls+=' sat';
     if(today.getFullYear()===cy&&today.getMonth()===cm&&today.getDate()===d)cls+=' tfa';
+    const ed=evDays[d];
+    if(ed)cls+= ed.fa.length&&ed.chu.length ? ' bgboth' : ed.fa.length ? ' bgfa' : ' bgchu';
     c.className=cls;
     const n=document.createElement('div');n.className='dn';n.textContent=d;c.appendChild(n);
     if(evDays[d]){
