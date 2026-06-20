@@ -813,7 +813,7 @@ function closeDm(){document.getElementById('dm').classList.remove('open');}
 
 function openEdit(id){
   const ev=evs.find(e=>e.id===id);if(!ev)return;
-  closeDm();eid=id;const t=ev.team||'fa',info=TI[t];
+  closeDm();eid=id;const t=ev.team||'fa',info=TI[t];team=t;
   document.getElementById('fm-title').textContent='試合を編集';
   document.getElementById('fm-banner').className='tbn '+t;
   document.getElementById('fm-banner').textContent=info.i+' '+info.n+' の試合';
