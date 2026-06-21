@@ -365,8 +365,12 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           </select>
         </div>
         <div class="fg"><label class="fl">日付</label>
-          <input class="fi fa" id="f-dt" type="text" placeholder="例: 2026-06-28" maxlength="10">
+          <input class="fi fa" id="f-dt" type="date">
         </div>
+      </div>
+      <div class="fg" id="fg-dtend"><label class="fl">終了日（複数日開催の場合のみ）</label>
+        <input class="fi fa" id="f-dt-end" type="date">
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">開始日〜終了日を指定すると、期間内の日付ごとに同じ内容の試合が登録されます</div>
       </div>
       <div class="fr">
         <div class="fg"><label class="fl">集合（クラブハウス）</label><input class="fi fa" id="f-ga" type="time"></div>
@@ -706,6 +710,8 @@ function openNew(){
   imgUrls=[];document.getElementById('f-imgurl').value='';
   document.getElementById('img-st').textContent='';renderImgThumbs();
   document.getElementById('f-dt').value=new Date().toISOString().slice(0,10);
+  document.getElementById('f-dt-end').value='';
+  document.getElementById('fg-dtend').style.display='';
   document.getElementById('f-cat').value=t==='chu'?'U15':'U11';
   document.getElementById('ty-fa').className='tyb'+(t==='fa'?' aofa':'');
   document.getElementById('ty-chu').className='tyb'+(t==='chu'?' aochu':'');
@@ -719,7 +725,7 @@ function closeFm(){
 }
 
 function setFmColor(t){
-  ['f-ttl','f-dt','f-ga','f-gv','f-dismiss','f-ve','f-vemap','f-gl','f-opponents','f-fee','f-mo','f-cat'].forEach(id=>{
+  ['f-ttl','f-dt','f-dt-end','f-ga','f-gv','f-dismiss','f-ve','f-vemap','f-gl','f-opponents','f-fee','f-mo','f-cat'].forEach(id=>{
     const el=document.getElementById(id);el.className=el.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;
   });
   document.querySelectorAll('.rrow input').forEach(el=>{el.className=el.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;});
@@ -738,17 +744,26 @@ function selType(tp){
   document.getElementById('tb-ot').className='tyb'+(tp==='ot'?' ao':'');
 }
 
+function dateRange(start,end){
+  const dates=[];
+  let cur=new Date(start+'T00:00:00');
+  const last=new Date(end+'T00:00:00');
+  while(cur<=last){dates.push(cur.toISOString().slice(0,10));cur.setDate(cur.getDate()+1);}
+  return dates;
+}
+
 async function saveEv(){
   if(_uploading>0){showToast('⏳ 画像をアップロード中です。完了後に保存してください');return;}
   const ttl=document.getElementById('f-ttl').value.trim(),dt=document.getElementById('f-dt').value;
-  const dateOk=/^\d{4}-\d{2}-\d{2}$/.test(dt);
-  if(!ttl||!dt||!dateOk){showToast('タイトルと日付（YYYY-MM-DD形式）は必須です');return;}
+  if(!ttl||!dt){showToast('タイトルと日付は必須です');return;}
+  const dtEnd=document.getElementById('f-dt-end').value;
+  const dates=(!eid&&dtEnd&&dtEnd>dt)?dateRange(dt,dtEnd):[dt];
   const btn=document.getElementById('sav-btn');btn.disabled=true;
   document.getElementById('sav-txt').innerHTML='<span class="spin"></span> 保存中...';
   const rrows=document.querySelectorAll('#results-list .rrow');
   const results=[];
   rrows.forEach(row=>{const opp=row.querySelector('.r-opp').value.trim(),ko=row.querySelector('.r-time').value,us=row.querySelector('.r-us').value,th=row.querySelector('.r-th').value,scorers=row.querySelector('.r-scorers').value.trim();if(opp||ko||us!==''||th!=='')results.push({opp,ko,us,th,scorers});});
-  const ev={id:eid||gid(),team,type:selType_v,ttl,date:dt,
+  const base={team,type:selType_v,ttl,
     cat:document.getElementById('f-cat').value,
     ga:document.getElementById('f-ga').value,
     gv:document.getElementById('f-gv').value,
@@ -761,11 +776,18 @@ async function saveEv(){
     imgurl:document.getElementById('f-imgurl').value.trim(),
     results:JSON.stringify(results),
     mo:document.getElementById('f-mo').value.trim()};
-  const ok=await gasPost({action:'save',sheet:'events',data:ev});
-  if(ok){
-    if(eid){const i=evs.findIndex(e=>e.id===eid);if(i>=0)evs[i]=ev;}else{evs.push(ev);}
+  let okCount=0;
+  for(const d of dates){
+    const ev=Object.assign({},base,{id:eid||gid(),date:d});
+    const ok=await gasPost({action:'save',sheet:'events',data:ev});
+    if(ok){
+      if(eid){const i=evs.findIndex(e=>e.id===eid);if(i>=0)evs[i]=ev;}else{evs.push(ev);}
+      okCount++;
+    }
+  }
+  if(okCount===dates.length){
     saveCache();
-    showToast('✅ 保存しました');
+    showToast(dates.length>1?'✅ '+dates.length+'日分を保存しました':'✅ 保存しました');
   } else {
     showToast(GAS_URL?'❌ 保存失敗（URLを確認）':'❌ Apps Script URLが未設定');
   }
@@ -819,6 +841,8 @@ function openEdit(id){
   document.getElementById('fm-banner').textContent=info.i+' '+info.n+' の試合';
   document.getElementById('f-ttl').value=ev.ttl||'';
   document.getElementById('f-dt').value=ev.date||'';
+  document.getElementById('f-dt-end').value='';
+  document.getElementById('fg-dtend').style.display='none';
   document.getElementById('f-ga').value=ev.ga||'';
   document.getElementById('f-gv').value=ev.gv||'';
   document.getElementById('f-dismiss').value=ev.dismiss||'';
@@ -1224,6 +1248,7 @@ function loadFromParams(){
   const tp=p.get('type');if(tp)selType(tp);
   if(p.get('cat'))document.getElementById('f-cat').value=p.get('cat');
   if(p.get('date'))document.getElementById('f-dt').value=p.get('date');
+  if(p.get('dateend'))document.getElementById('f-dt-end').value=p.get('dateend');
   ['ttl','ga','gv','dismiss','ve','vemap','gl','opponents','fee','mo'].forEach(k=>{
     const v=p.get(k);if(v!==null&&v!=='')document.getElementById('f-'+k).value=v;
   });

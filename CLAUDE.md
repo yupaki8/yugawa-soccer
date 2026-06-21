@@ -20,7 +20,7 @@
 | team | - | fa/chu | チーム（湯川FA/湯川中学校） |
 | type | - | of/tr/cu/ot | 種別（公式戦/TRM/カップ戦/その他） |
 | cat | f-cat | select | カテゴリ（U15/U12/U11/U10/その他） |
-| date | f-dt | text | 日付 YYYY-MM-DD |
+| date | f-dt | date | 日付 YYYY-MM-DD |
 | ttl | f-ttl | text | タイトル/大会名 |
 | ga | f-ga | time | 集合時間（クラブハウス） |
 | gv | f-gv | time | 集合時間（会場） |
@@ -34,7 +34,11 @@
 | mo | f-mo | textarea | 持ち物・メモ |
 | results | (動的生成) | JSON | 試合結果（試合毎：opp/us/th/scorers） |
 
+| dateend | f-dt-end | date | 終了日（複数日開催時のみ。新規登録時のみ表示） |
+
 `results`・`imgurl` はURLパラメータ非対応（`results` は試合後入力、`imgurl` はDrive経由自動生成）。
+
+`dateend`/`f-dt-end` に値を入れると、保存時に開始日〜終了日の各日付で同内容のイベントを個別登録する（複数日開催の一括登録用）。スプレッドシート未保存（保存時に展開されて消える一時フィールド）。編集時は非表示。
 
 ## スプレッドシートスキーマ（eventsシート）
 
