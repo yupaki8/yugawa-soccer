@@ -185,7 +185,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .rrow-top .r-opp{flex:1;}
 .rrow-top .r-ko{width:74px;flex-shrink:0;}
 .rrow-top .r-sc{width:44px;text-align:center;}
-.r-rm{background:none;border:none;color:var(--lose);cursor:pointer;font-size:18px;line-height:1;padding:0 4px;flex-shrink:0;}
+.r-rm{background:none;border:none;color:var(--lose);cursor:pointer;font-size:18px;line-height:1;padding:6px 4px 6px 10px;flex-shrink:0;margin-left:4px;}
 .radd{width:100%;background:none;border:1.5px dashed var(--border);border-radius:9px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;}
 .radd.fa:hover{border-color:var(--fa);color:var(--fa);}.radd.chu:hover{border-color:var(--chu);color:var(--chu);}
 .img-area{border:2px dashed var(--border);border-radius:9px;padding:10px;color:var(--muted);font-size:12px;transition:border-color .2s,color .2s;}
@@ -1049,9 +1049,14 @@ function addResultRow(opp,ko,us,th,scorers,t){
   const usIn=document.createElement('input');usIn.className='fi '+t+' r-sc r-us';usIn.type='number';usIn.min='0';usIn.placeholder='自';usIn.value=us;usIn.style.textAlign='center';
   const sep=document.createElement('div');sep.className='ss';sep.textContent='-';
   const thIn=document.createElement('input');thIn.className='fi '+t+' r-sc r-th';thIn.type='number';thIn.min='0';thIn.placeholder='相';thIn.value=th;thIn.style.textAlign='center';
-  const rm=document.createElement('button');rm.className='r-rm';rm.type='button';rm.textContent='×';rm.onclick=function(){row.remove();};
-  top.appendChild(koIn);top.appendChild(oppIn);top.appendChild(usIn);top.appendChild(sep);top.appendChild(thIn);top.appendChild(rm);
   const scIn=document.createElement('input');scIn.className='fi '+t+' r-scorers';scIn.placeholder='得点者（例: 田中 ×2, 鈴木）';scIn.value=scorers;
+  const rm=document.createElement('button');rm.className='r-rm';rm.type='button';rm.textContent='×';
+  rm.onclick=function(){
+    const hasData=oppIn.value||usIn.value||thIn.value||scIn.value;
+    if(hasData&&!confirm('この試合結果を削除しますか？'))return;
+    row.remove();
+  };
+  top.appendChild(koIn);top.appendChild(oppIn);top.appendChild(usIn);top.appendChild(sep);top.appendChild(thIn);top.appendChild(rm);
   row.appendChild(top);row.appendChild(scIn);
   list.appendChild(row);
 }
