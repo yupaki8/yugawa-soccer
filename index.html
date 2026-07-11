@@ -220,10 +220,11 @@ button,input,select,textarea{font-size:inherit;}
 .toast{position:fixed;bottom:calc(76px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:9px 16px;border-radius:20px;font-size:12px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200;white-space:nowrap;box-shadow:var(--sh-lg);}
 .toast.show{opacity:1;}
 .rrow{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;}
-.rrow-top{display:flex;align-items:center;gap:6px;}
-.rrow-top .r-opp{flex:1;}
-.rrow-top .r-ko{width:80px;flex-shrink:0;}
-.rrow-top .r-sc{width:48px;text-align:center;}
+.rrow-top,.rrow-mid{display:flex;align-items:center;gap:6px;}
+.rrow-top .r-opp{flex:1;min-width:0;}
+.rrow-top .r-ko{width:96px;flex-shrink:0;padding-left:8px;padding-right:6px;}
+.rrow-mid .r-sc{width:52px;flex-shrink:0;text-align:center;padding-left:4px;padding-right:4px;}
+.rrow-mid .r-scorers{flex:1;min-width:0;}
 .r-rm{background:none;border:none;color:var(--lose);cursor:pointer;font-size:18px;line-height:1;padding:6px 4px 6px 10px;flex-shrink:0;margin-left:4px;}
 .radd{width:100%;background:none;border:1.5px dashed var(--border);border-radius:var(--r-sm);padding:9px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;}
 .radd.fa:active{border-color:var(--fa);color:var(--fa);}.radd.chu:active{border-color:var(--chu);color:var(--chu);}
@@ -877,7 +878,7 @@ async function saveEv(){
   document.getElementById('sav-txt').innerHTML='<span class="spin"></span> 保存中...';
   const rrows=document.querySelectorAll('#results-list .rrow');
   const results=[];
-  rrows.forEach(row=>{const opp=row.querySelector('.r-opp').value.trim(),ko=row.querySelector('.r-time').value,us=row.querySelector('.r-us').value,th=row.querySelector('.r-th').value,scorers=row.querySelector('.r-scorers').value.trim();if(opp||ko||us!==''||th!=='')results.push({opp,ko,us,th,scorers});});
+  rrows.forEach(row=>{const opp=stripVs(row.querySelector('.r-opp').value),ko=row.querySelector('.r-time').value,us=row.querySelector('.r-us').value,th=row.querySelector('.r-th').value,scorers=row.querySelector('.r-scorers').value.trim();if(opp||ko||us!==''||th!=='')results.push({opp,ko,us,th,scorers});});
   const base={team,type:selType_v,ttl,
     cat:document.getElementById('f-cat').value,
     ga:document.getElementById('f-ga').value,
@@ -935,7 +936,7 @@ function openDetail(id){
     h+='<div class="dr"><div class="dl">会場</div><div class="dv">'+(ev.ve||'')+mapLink+'</div></div>';
   }
   if(ev.gl)h+='<div class="dr"><div class="dl">集合場所</div><div class="dv">'+ev.gl+'</div></div>';
-  if(evResults.length>0){const rl2={win:'勝',lose:'負',draw:'分'};h+='<div class="dr"><div class="dl">試合結果</div><div class="dv">';evResults.forEach(r=>{const us=parseInt(r.us),th=parseInt(r.th),ok=!isNaN(us)&&!isNaN(th),res=ok?(us>th?'win':us<th?'lose':'draw'):null;h+='<div style="margin-bottom:6px">';h+='<div style="display:flex;align-items:center;gap:6px">';if(r.ko)h+='<span class="mi" style="font-size:11px;color:var(--muted)">'+ic('clock','icon-xs')+r.ko+'</span>';if(r.opp)h+='<span style="font-size:11px;color:var(--muted)">'+r.opp+'</span>';if(ok)h+='<span class="sv '+res+'" style="font-size:15px">'+us+'-'+th+'</span><span class="sl2 '+res+'">'+rl2[res]+'</span>';h+='</div>';if(r.scorers)h+='<div style="font-size:11px;color:var(--muted);margin-top:2px">⚽ '+r.scorers+'</div>';h+='</div>';});h+='</div></div>';}
+  if(evResults.length>0){const rl2={win:'勝',lose:'負',draw:'分'};h+='<div class="dr"><div class="dl">試合結果</div><div class="dv">';evResults.forEach(r=>{const us=parseInt(r.us),th=parseInt(r.th),ok=!isNaN(us)&&!isNaN(th),res=ok?(us>th?'win':us<th?'lose':'draw'):null;h+='<div style="margin-bottom:6px">';h+='<div style="display:flex;align-items:center;gap:6px">';if(r.ko)h+='<span class="mi" style="font-size:11px;color:var(--muted)">'+ic('clock','icon-xs')+r.ko+'</span>';if(r.opp)h+='<span style="font-size:11px;color:var(--muted)">vs '+stripVs(r.opp)+'</span>';if(ok)h+='<span class="sv '+res+'" style="font-size:15px">'+us+'-'+th+'</span><span class="sl2 '+res+'">'+rl2[res]+'</span>';h+='</div>';if(r.scorers)h+='<div style="font-size:11px;color:var(--muted);margin-top:2px">⚽ '+r.scorers+'</div>';h+='</div>';});h+='</div></div>';}
   if(ev.opponents)h+='<div class="dr"><div class="dl">対戦相手</div><div class="dv" style="white-space:pre-wrap">'+ev.opponents+'</div></div>';
   if(ev.fee)h+='<div class="dr"><div class="dl">参加費等</div><div class="dv">'+ev.fee+'</div></div>';
   if(ev.mo)h+='<div class="dr"><div class="dl">持ち物・メモ</div><div class="dv" style="white-space:pre-wrap">'+ev.mo+'</div></div>';
@@ -1057,7 +1058,7 @@ function renderStats(){
   filtered.sort((a,b)=>b.date.localeCompare(a.date)).forEach(e=>{
     const rs=e.results?JSON.parse(e.results):[];
     if(!rs.length){const tr=document.createElement('tr');tr.innerHTML='<td style="white-space:nowrap">'+e.date+'</td><td style="font-size:11px">'+(e.ttl||'')+(e.cat?'<br><span style="color:var(--muted);font-size:10px">'+e.cat+'</span>':'')+'</td><td>－</td><td>－</td>';tbody.appendChild(tr);return;}
-    rs.forEach((r,i)=>{const us=parseInt(r.us),th=parseInt(r.th),res=(!isNaN(us)&&!isNaN(th))?(us>th?'win':us<th?'lose':'draw'):null,resL=res?{win:'勝',lose:'負',draw:'分'}[res]:'－',resC=res?'color:var(--'+res+')':'';const tr=document.createElement('tr');const titleCell=i===0?((e.ttl||'')+(e.cat?'<br><span style="color:var(--muted);font-size:10px">'+e.cat+'</span>':'')):(r.opp?'<span style="color:var(--muted)">'+r.opp+'</span>':'');tr.innerHTML='<td style="white-space:nowrap">'+(i===0?e.date:'')+'</td><td style="font-size:11px">'+titleCell+'</td><td style="'+resC+';font-weight:700;font-size:12px">'+resL+'</td><td style="font-family:\'Oswald\',sans-serif;font-size:14px">'+(!isNaN(us)&&!isNaN(th)?us+'-'+th:'－')+'</td>';tbody.appendChild(tr);});
+    rs.forEach((r,i)=>{const us=parseInt(r.us),th=parseInt(r.th),res=(!isNaN(us)&&!isNaN(th))?(us>th?'win':us<th?'lose':'draw'):null,resL=res?{win:'勝',lose:'負',draw:'分'}[res]:'－',resC=res?'color:var(--'+res+')':'';const tr=document.createElement('tr');const titleCell=i===0?((e.ttl||'')+(e.cat?'<br><span style="color:var(--muted);font-size:10px">'+e.cat+'</span>':'')):(r.opp?'<span style="color:var(--muted)">vs '+stripVs(r.opp)+'</span>':'');tr.innerHTML='<td style="white-space:nowrap">'+(i===0?e.date:'')+'</td><td style="font-size:11px">'+titleCell+'</td><td style="'+resC+';font-weight:700;font-size:12px">'+resL+'</td><td style="font-family:\'Oswald\',sans-serif;font-size:14px">'+(!isNaN(us)&&!isNaN(th)?us+'-'+th:'－')+'</td>';tbody.appendChild(tr);});
   });
 }
 
@@ -1154,13 +1155,16 @@ document.addEventListener('paste',function(e){
 });
 
 // ===== 試合結果行 =====
+// 相手名の先頭の「vs」は固定表記のため保存・表示しない
+function stripVs(s){return String(s||'').trim().replace(/^vs[\s.．　]*/i,'');}
 function addResultRow(opp,ko,us,th,scorers,t){
-  opp=opp||'';ko=ko||'';us=us||'';th=th||'';scorers=scorers||'';t=t||team;
+  opp=stripVs(opp);ko=ko||'';us=us||'';th=th||'';scorers=scorers||'';t=t||team;
   const list=document.getElementById('results-list');
   const row=document.createElement('div');row.className='rrow';
   const top=document.createElement('div');top.className='rrow-top';
+  const mid=document.createElement('div');mid.className='rrow-mid';
   const koIn=document.createElement('input');koIn.className='fi '+t+' r-ko r-time';koIn.type='time';koIn.value=ko;koIn.title='キックオフ';
-  const oppIn=document.createElement('input');oppIn.className='fi '+t+' r-opp';oppIn.placeholder='vs ○○FC';oppIn.value=opp;
+  const oppIn=document.createElement('input');oppIn.className='fi '+t+' r-opp';oppIn.placeholder='相手チーム名';oppIn.value=opp;
   const usIn=document.createElement('input');usIn.className='fi '+t+' r-sc r-us';usIn.type='number';usIn.min='0';usIn.placeholder='自';usIn.value=us;usIn.style.textAlign='center';
   const sep=document.createElement('div');sep.className='ss';sep.textContent='-';
   const thIn=document.createElement('input');thIn.className='fi '+t+' r-sc r-th';thIn.type='number';thIn.min='0';thIn.placeholder='相';thIn.value=th;thIn.style.textAlign='center';
@@ -1171,8 +1175,9 @@ function addResultRow(opp,ko,us,th,scorers,t){
     if(hasData&&!confirm('この試合結果を削除しますか？'))return;
     row.remove();
   };
-  top.appendChild(koIn);top.appendChild(oppIn);top.appendChild(usIn);top.appendChild(sep);top.appendChild(thIn);top.appendChild(rm);
-  row.appendChild(top);row.appendChild(scIn);
+  top.appendChild(koIn);top.appendChild(oppIn);top.appendChild(rm);
+  mid.appendChild(usIn);mid.appendChild(sep);mid.appendChild(thIn);mid.appendChild(scIn);
+  row.appendChild(top);row.appendChild(mid);
   list.appendChild(row);
 }
 
@@ -1185,7 +1190,7 @@ async function saveDraft(){
   const btn=document.getElementById('dft-btn');btn.disabled=true;btn.textContent='⏳ 保存中...';
   const rrows=document.querySelectorAll('#results-list .rrow');
   const results=[];
-  rrows.forEach(row=>{const opp=row.querySelector('.r-opp').value.trim(),ko=row.querySelector('.r-time').value,us=row.querySelector('.r-us').value,th=row.querySelector('.r-th').value,scorers=row.querySelector('.r-scorers').value.trim();if(opp||ko||us!==''||th!=='')results.push({opp,ko,us,th,scorers});});
+  rrows.forEach(row=>{const opp=stripVs(row.querySelector('.r-opp').value),ko=row.querySelector('.r-time').value,us=row.querySelector('.r-us').value,th=row.querySelector('.r-th').value,scorers=row.querySelector('.r-scorers').value.trim();if(opp||ko||us!==''||th!=='')results.push({opp,ko,us,th,scorers});});
   const newId=eid||gid();
   const ev={id:newId,team,type:selType_v,ttl,date:dt,
     cat:document.getElementById('f-cat').value,
