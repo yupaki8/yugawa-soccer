@@ -63,6 +63,8 @@ button,input,select,textarea{font-size:inherit;}
 .cday{aspect-ratio:1;border-radius:9px;padding:2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;min-height:42px;position:relative;transition:filter .1s;}
 .cday.empty{cursor:default;pointer-events:none;}
 .cday.sun .dn{color:#e24b4a;}.cday.sat .dn{color:#5b6af0;}
+.cday.hol .dn{color:#e24b4a;}
+.hn{position:absolute;left:1px;right:1px;bottom:5px;font-size:7px;color:#e24b4a;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1;font-weight:500;}
 .cday.tfa .dn{background:var(--fa);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px var(--fa-l);}
 .cday.tchu .dn{background:var(--chu);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px var(--chu-l);}
 .cday.bgfa{background:#d9eee1;}.cday.bgchu{background:#dae7f8;}
@@ -85,6 +87,7 @@ button,input,select,textarea{font-size:inherit;}
 .ed{font-size:20px;font-weight:700;line-height:1.15;font-family:'Oswald',sans-serif;}
 .ed.fa{color:var(--fa);}.ed.chu{color:var(--chu);}
 .edw{font-size:9px;color:var(--muted);}
+.edw.sun{color:#e24b4a;}.edw.sat{color:#5b6af0;}
 .eb{flex:1;padding:9px 10px;min-width:0;}
 .tchip{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;margin-bottom:3px;}
 .tchip-fa{background:var(--fa-l);color:var(--fa);}.tchip-chu{background:var(--chu-l);color:var(--chu);}
@@ -731,6 +734,41 @@ function updNav(){
   });
 }
 
+// ===== 日本の祝日（2000〜2099年対応・オフライン計算） =====
+const HOLC={};
+function jpHol(y){
+  if(HOLC[y])return HOLC[y];
+  const h={};
+  const set=(m,d,n)=>{h[m+'-'+d]=n;};
+  const nthMon=(m,n)=>1+((8-new Date(y,m-1,1).getDay())%7)+7*(n-1);
+  const eq=base=>Math.floor(base+0.2421904*(y-2000)-Math.floor((y-2000)/4));
+  set(1,1,'元日');set(1,nthMon(1,2),'成人の日');
+  set(2,11,'建国記念の日');if(y>=2020)set(2,23,'天皇誕生日');
+  set(3,eq(20.69115),'春分の日');
+  set(4,29,'昭和の日');set(5,3,'憲法記念日');set(5,4,'みどりの日');set(5,5,'こどもの日');
+  set(7,nthMon(7,3),'海の日');if(y>=2016)set(8,11,'山の日');
+  set(9,nthMon(9,3),'敬老の日');set(9,eq(23.09),'秋分の日');
+  set(10,nthMon(10,2),'スポーツの日');
+  set(11,3,'文化の日');set(11,23,'勤労感謝の日');
+  // 振替休日（日曜と重なった場合、直後の平日）
+  Object.keys(h).forEach(k=>{
+    const[m,d]=k.split('-').map(Number);
+    if(new Date(y,m-1,d).getDay()===0){
+      let t=new Date(y,m-1,d+1);
+      while(h[(t.getMonth()+1)+'-'+t.getDate()])t=new Date(y,t.getMonth(),t.getDate()+1);
+      h[(t.getMonth()+1)+'-'+t.getDate()]='振替休日';
+    }
+  });
+  // 国民の休日（祝日に挟まれた平日）
+  for(let m=1;m<=12;m++){
+    const last=new Date(y,m,0).getDate();
+    for(let d=2;d<last;d++){
+      if(!h[m+'-'+d]&&h[m+'-'+(d-1)]&&h[m+'-'+(d+1)]&&new Date(y,m-1,d).getDay()!==0)h[m+'-'+d]='国民の休日';
+    }
+  }
+  HOLC[y]=h;return h;
+}
+
 // ===== カレンダー =====
 function chM(d){cm+=d;if(cm>11){cm=0;cy++;}if(cm<0){cm=11;cy--;}renderCal();renderList();}
 function goToday(){const t=new Date();cy=t.getFullYear();cm=t.getMonth();renderCal();renderList();}
@@ -750,16 +788,20 @@ function renderCal(){
       evDays[n][e.team==='chu'?'chu':'fa']++;
     }
   });
+  const hol=jpHol(cy);
   for(let i=0;i<first;i++){const c=document.createElement('div');c.className='cday empty';grid.appendChild(c);}
   for(let d=1;d<=days;d++){
     const dow=(first+d-1)%7,c=document.createElement('div');
+    const hn=hol[(cm+1)+'-'+d];
     let cls='cday hfa';
-    if(dow===0)cls+=' sun';if(dow===6)cls+=' sat';
+    if(dow===0)cls+=' sun';if(dow===6)cls+=' sat';if(hn)cls+=' hol';
     if(today.getFullYear()===cy&&today.getMonth()===cm&&today.getDate()===d)cls+=' tfa';
     const ed=evDays[d];
     if(ed)cls+= ed.fa&&ed.chu ? ' bgboth' : ed.fa ? ' bgfa' : ' bgchu';
     c.className=cls;
+    if(hn)c.title=hn;
     const n=document.createElement('div');n.className='dn';n.textContent=d;c.appendChild(n);
+    if(hn&&!evDays[d]){const hl=document.createElement('div');hl.className='hn';hl.textContent=hn;c.appendChild(hl);}
     if(evDays[d]){
       const {fa:faN,chu:chuN}=evDays[d], total=faN+chuN;
       const dd=document.createElement('div');dd.className='ddots';
@@ -790,6 +832,8 @@ function renderList(){
   month.forEach(e=>{
     const t=e.team||'fa',info=TI[t];
     const d=new Date(e.date+'T00:00:00'),tp=e.type||'of';
+    const holName=jpHol(d.getFullYear())[(d.getMonth()+1)+'-'+d.getDate()];
+    const dowCls=(holName||d.getDay()===0)?' sun':d.getDay()===6?' sat':'';
     const tpL={of:'公式戦',tr:'TRM',cu:'カップ戦',ot:'その他'}[tp];
     const bCls=tp==='of'?'b'+(t==='fa'?'fa':'ch')+'o':tp==='tr'?'btrm':tp==='cu'?'bcup':'both';
     const dcCls=t+(tp==='of'?'of':tp==='tr'?'tr':tp==='cu'?'cu':'ot');
@@ -806,7 +850,7 @@ function renderList(){
     if(e.cat)meta+='<span class="mi">'+ic('tag','icon-xs')+e.cat+'</span>';
     if(e.fee)meta+='<span class="mi">'+ic('yen','icon-xs')+e.fee+'</span>';
     if(parseImgurls(e.imgurl||'').length)meta+='<span class="mi">'+ic('paperclip','icon-xs')+'</span>';
-    card.innerHTML='<div class="ein"><div class="edc '+dcCls+'"><div class="em">'+MN[d.getMonth()]+'</div><div class="ed '+t+'">'+d.getDate()+'</div><div class="edw">'+DOWS[d.getDay()]+'</div></div><div class="eb"><span class="tchip tchip-'+t+'">'+info.n+'</span><span class="tbdg '+bCls+'">'+tpL+'</span><div class="et">'+(e.ttl||'（タイトルなし）')+'</div>'+(meta?'<div class="emeta">'+meta+'</div>':'')+'</div>'+sc+'</div>';
+    card.innerHTML='<div class="ein"><div class="edc '+dcCls+'"><div class="em">'+MN[d.getMonth()]+'</div><div class="ed '+t+'">'+d.getDate()+'</div><div class="edw'+dowCls+'"'+(holName?' title="'+holName+'"':'')+'>'+DOWS[d.getDay()]+(holName?'・祝':'')+'</div></div><div class="eb"><span class="tchip tchip-'+t+'">'+info.n+'</span><span class="tbdg '+bCls+'">'+tpL+'</span><div class="et">'+(e.ttl||'（タイトルなし）')+'</div>'+(meta?'<div class="emeta">'+meta+'</div>':'')+'</div>'+sc+'</div>';
     card.addEventListener('click',()=>openDetail(e.id));con.appendChild(card);
   });
 }
