@@ -1187,8 +1187,10 @@ function addResultRow(opp,ko,us,th,scorers,t){
   const sep=document.createElement('div');sep.className='ss';sep.textContent='-';
   const thIn=document.createElement('input');thIn.className='fi '+t+' r-sc r-th';thIn.type='number';thIn.min='0';thIn.placeholder='相';thIn.value=th;thIn.style.textAlign='center';
   function addGoalRow(gt,gn){
+    // 時計形式（HH:MM）以外の旧データ（例: 12分）は名前欄に退避して保持
+    if(gt&&!/^\d{1,2}:\d{2}$/.test(gt)){gn=(gt+' '+(gn||'')).trim();gt='';}
     const g=document.createElement('div');g.className='grow';
-    const tIn=document.createElement('input');tIn.className='fi '+t+' g-t';tIn.placeholder='時間';tIn.value=gt||'';
+    const tIn=document.createElement('input');tIn.className='fi '+t+' g-t';tIn.type='time';tIn.value=gt||'';tIn.title='ゴール時刻';
     const nIn=document.createElement('input');nIn.className='fi '+t+' g-n';nIn.placeholder='得点者名';nIn.value=gn||'';
     const grm=document.createElement('button');grm.className='r-rm';grm.type='button';grm.textContent='×';
     grm.onclick=function(){
