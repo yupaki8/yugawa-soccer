@@ -219,12 +219,15 @@ button,input,select,textarea{font-size:inherit;}
 @keyframes sp{to{transform:rotate(360deg)}}
 .toast{position:fixed;bottom:calc(76px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:9px 16px;border-radius:20px;font-size:12px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200;white-space:nowrap;box-shadow:var(--sh-lg);}
 .toast.show{opacity:1;}
-.rrow{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;}
-.rrow-top,.rrow-mid{display:flex;align-items:center;gap:6px;}
+.rrow{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;border:1px solid var(--border);border-radius:10px;padding:8px;}
+.rrow-top,.rrow-mid,.grow{display:flex;align-items:center;gap:6px;}
 .rrow-top .r-opp{flex:1;min-width:0;}
 .rrow-top .r-ko{width:96px;flex-shrink:0;padding-left:8px;padding-right:6px;}
 .rrow-mid .r-sc{width:52px;flex-shrink:0;text-align:center;padding-left:4px;padding-right:4px;}
-.rrow-mid .r-scorers{flex:1;min-width:0;}
+.grow .g-t{width:96px;flex-shrink:0;padding-left:8px;padding-right:6px;}
+.grow .g-n{flex:1;min-width:0;}
+.gadd{flex:1;min-width:0;min-height:44px;background:none;border:1.5px dashed var(--border);border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;}
+.gadd.fa:active{border-color:var(--fa);color:var(--fa);}.gadd.chu:active{border-color:var(--chu);color:var(--chu);}
 .r-rm{background:none;border:none;color:var(--lose);cursor:pointer;font-size:18px;line-height:1;padding:6px 4px 6px 10px;flex-shrink:0;margin-left:4px;}
 .radd{width:100%;background:none;border:1.5px dashed var(--border);border-radius:var(--r-sm);padding:9px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;}
 .radd.fa:active{border-color:var(--fa);color:var(--fa);}.radd.chu:active{border-color:var(--chu);color:var(--chu);}
@@ -844,7 +847,7 @@ function setFmColor(t){
   ['f-ttl','f-dt','f-dt-end','f-ga','f-gv','f-dismiss','f-ve','f-vemap','f-gl','f-opponents','f-fee','f-mo','f-cat'].forEach(id=>{
     const el=document.getElementById(id);el.className=el.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;
   });
-  document.querySelectorAll('.rrow input').forEach(el=>{el.className=el.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;});
+  document.querySelectorAll('.rrow input,.rrow .gadd').forEach(el=>{el.className=el.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;});
   document.getElementById('sav-btn').className='sav '+t;
   document.getElementById('radd-btn').className='radd '+t;
   const ia=document.getElementById('img-area');ia.className=ia.className.replace(/\b(fa|chu)\b/g,'').trim()+' '+t;
@@ -878,7 +881,7 @@ async function saveEv(){
   document.getElementById('sav-txt').innerHTML='<span class="spin"></span> 保存中...';
   const rrows=document.querySelectorAll('#results-list .rrow');
   const results=[];
-  rrows.forEach(row=>{const opp=stripVs(row.querySelector('.r-opp').value),ko=row.querySelector('.r-time').value,us=row.querySelector('.r-us').value,th=row.querySelector('.r-th').value,scorers=row.querySelector('.r-scorers').value.trim();if(opp||ko||us!==''||th!=='')results.push({opp,ko,us,th,scorers});});
+  rrows.forEach(row=>{const opp=stripVs(row.querySelector('.r-opp').value),ko=row.querySelector('.r-time').value,us=row.querySelector('.r-us').value,th=row.querySelector('.r-th').value,scorers=collectScorers(row);if(opp||ko||us!==''||th!==''||scorers)results.push({opp,ko,us,th,scorers});});
   const base={team,type:selType_v,ttl,
     cat:document.getElementById('f-cat').value,
     ga:document.getElementById('f-ga').value,
@@ -1157,27 +1160,57 @@ document.addEventListener('paste',function(e){
 // ===== 試合結果行 =====
 // 相手名の先頭の「vs」は固定表記のため保存・表示しない
 function stripVs(s){return String(s||'').trim().replace(/^vs[\s.．　]*/i,'');}
+// scorers文字列（例: "12分 田中, 25分 鈴木" / 旧形式 "田中 ×2, 鈴木"）→ ゴール配列
+function parseScorers(s){
+  return String(s||'').split(/[,、]/).map(x=>x.trim()).filter(Boolean).map(x=>{
+    const m=x.match(/^((?:前半|後半)?\s*\d+\s*分|\d+'|\d{1,2}:\d{2})\s+(.+)$/);
+    return m?{gt:m[1],gn:m[2]}:{gt:'',gn:x};
+  });
+}
+// ゴール行 → scorers文字列
+function collectScorers(row){
+  return Array.from(row.querySelectorAll('.grow')).map(g=>{
+    const gt=g.querySelector('.g-t').value.trim(),gn=g.querySelector('.g-n').value.trim();
+    return gt&&gn?gt+' '+gn:gt||gn;
+  }).filter(Boolean).join(', ');
+}
 function addResultRow(opp,ko,us,th,scorers,t){
   opp=stripVs(opp);ko=ko||'';us=us||'';th=th||'';scorers=scorers||'';t=t||team;
   const list=document.getElementById('results-list');
   const row=document.createElement('div');row.className='rrow';
   const top=document.createElement('div');top.className='rrow-top';
   const mid=document.createElement('div');mid.className='rrow-mid';
+  const goals=document.createElement('div');goals.className='goals';
   const koIn=document.createElement('input');koIn.className='fi '+t+' r-ko r-time';koIn.type='time';koIn.value=ko;koIn.title='キックオフ';
   const oppIn=document.createElement('input');oppIn.className='fi '+t+' r-opp';oppIn.placeholder='相手チーム名';oppIn.value=opp;
   const usIn=document.createElement('input');usIn.className='fi '+t+' r-sc r-us';usIn.type='number';usIn.min='0';usIn.placeholder='自';usIn.value=us;usIn.style.textAlign='center';
   const sep=document.createElement('div');sep.className='ss';sep.textContent='-';
   const thIn=document.createElement('input');thIn.className='fi '+t+' r-sc r-th';thIn.type='number';thIn.min='0';thIn.placeholder='相';thIn.value=th;thIn.style.textAlign='center';
-  const scIn=document.createElement('input');scIn.className='fi '+t+' r-scorers';scIn.placeholder='得点者（例: 田中 ×2, 鈴木）';scIn.value=scorers;
+  function addGoalRow(gt,gn){
+    const g=document.createElement('div');g.className='grow';
+    const tIn=document.createElement('input');tIn.className='fi '+t+' g-t';tIn.placeholder='時間';tIn.value=gt||'';
+    const nIn=document.createElement('input');nIn.className='fi '+t+' g-n';nIn.placeholder='得点者名';nIn.value=gn||'';
+    const grm=document.createElement('button');grm.className='r-rm';grm.type='button';grm.textContent='×';
+    grm.onclick=function(){
+      if((tIn.value||nIn.value)&&!confirm('このゴールを削除しますか？'))return;
+      g.remove();
+    };
+    g.appendChild(tIn);g.appendChild(nIn);g.appendChild(grm);
+    goals.appendChild(g);
+    return tIn;
+  }
+  parseScorers(scorers).forEach(g=>addGoalRow(g.gt,g.gn));
+  const gadd=document.createElement('button');gadd.className='gadd '+t;gadd.type='button';gadd.textContent='＋ ゴール';
+  gadd.onclick=function(){addGoalRow('','').focus();};
   const rm=document.createElement('button');rm.className='r-rm';rm.type='button';rm.textContent='×';
   rm.onclick=function(){
-    const hasData=oppIn.value||usIn.value||thIn.value||scIn.value;
+    const hasData=oppIn.value||usIn.value||thIn.value||Array.from(goals.querySelectorAll('input')).some(i=>i.value);
     if(hasData&&!confirm('この試合結果を削除しますか？'))return;
     row.remove();
   };
   top.appendChild(koIn);top.appendChild(oppIn);top.appendChild(rm);
-  mid.appendChild(usIn);mid.appendChild(sep);mid.appendChild(thIn);mid.appendChild(scIn);
-  row.appendChild(top);row.appendChild(mid);
+  mid.appendChild(usIn);mid.appendChild(sep);mid.appendChild(thIn);mid.appendChild(gadd);
+  row.appendChild(top);row.appendChild(mid);row.appendChild(goals);
   list.appendChild(row);
 }
 
@@ -1190,7 +1223,7 @@ async function saveDraft(){
   const btn=document.getElementById('dft-btn');btn.disabled=true;btn.textContent='⏳ 保存中...';
   const rrows=document.querySelectorAll('#results-list .rrow');
   const results=[];
-  rrows.forEach(row=>{const opp=stripVs(row.querySelector('.r-opp').value),ko=row.querySelector('.r-time').value,us=row.querySelector('.r-us').value,th=row.querySelector('.r-th').value,scorers=row.querySelector('.r-scorers').value.trim();if(opp||ko||us!==''||th!=='')results.push({opp,ko,us,th,scorers});});
+  rrows.forEach(row=>{const opp=stripVs(row.querySelector('.r-opp').value),ko=row.querySelector('.r-time').value,us=row.querySelector('.r-us').value,th=row.querySelector('.r-th').value,scorers=collectScorers(row);if(opp||ko||us!==''||th!==''||scorers)results.push({opp,ko,us,th,scorers});});
   const newId=eid||gid();
   const ev={id:newId,team,type:selType_v,ttl,date:dt,
     cat:document.getElementById('f-cat').value,
