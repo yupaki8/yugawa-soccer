@@ -32,7 +32,7 @@
 | fee | f-fee | text | 参加費・交通費 |
 | imgurl | f-imgurl | hidden | 元データ画像のDrive URL（自動入力） |
 | mo | f-mo | textarea | 持ち物・メモ |
-| results | (動的生成) | JSON | 試合結果（試合毎：opp/us/th/scorers） |
+| results | (動的生成) | JSON | 試合結果（試合毎：opp/ko/us/th/scorers。scorers は「ゴール時刻(HH:MM) 得点者名」のカンマ区切り。例: `10:12 田中, 10:25 鈴木`） |
 
 | dateend | f-dt-end | date | 終了日（複数日開催時のみ。新規登録時のみ表示） |
 
