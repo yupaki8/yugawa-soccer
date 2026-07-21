@@ -866,6 +866,7 @@ function openNew(){
   imgUrls=[];document.getElementById('f-imgurl').value='';
   document.getElementById('img-st').textContent='';renderImgThumbs();
   document.getElementById('f-dt').value=new Date().toISOString().slice(0,10);
+  document.getElementById('f-dt').style.borderColor='';
   document.getElementById('f-dt-end').value='';
   document.getElementById('fg-dtend').style.display='';
   document.getElementById('f-cat').value=t==='chu'?'U15':'U11';
@@ -905,6 +906,18 @@ function selType(tp){
   document.getElementById('tb-tr').className='tyb'+(tp==='tr'?' at':'');
   document.getElementById('tb-cu').className='tyb'+(tp==='cu'?' acu':'');
   document.getElementById('tb-ot').className='tyb'+(tp==='ot'?' ao':'');
+}
+
+function isPastDate(ds){
+  return /^\d{4}-\d{2}-\d{2}$/.test(ds)&&ds<new Date().toISOString().slice(0,10);
+}
+// AI解析・URLパラメータ由来の日付が過去だったら警告（年の誤認識対策）
+function warnPastDate(){
+  const el=document.getElementById('f-dt');
+  if(!isPastDate(el.value))return false;
+  el.style.borderColor='#e53935';
+  showToast('⚠️ 日付「'+el.value+'」が過去です。年の読み取りミスの可能性があるため確認してください',7000);
+  return true;
 }
 
 function dateRange(start,end){
@@ -1298,6 +1311,7 @@ async function saveDraft(){
 
 // ===== ユーティリティ =====
 function showToast(msg,ms){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),ms||2800);}
+document.getElementById('f-dt').addEventListener('input',function(){this.style.borderColor='';});
 ['dm','nm','ai-modal','ai-stage-modal'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('open');});});
 document.getElementById('fm').addEventListener('click',e=>{
   if(e.target.id!=='fm')return;
@@ -1401,6 +1415,7 @@ async function aiAnalyze(){
   if(events.length===1){
     fillFormFromAi(events[0],_aiUrls);
     showToast('✅ AI読み込み完了');
+    warnPastDate();
   }else{
     showAiResults(events,_aiUrls);
   }
@@ -1432,7 +1447,7 @@ function showAiResults(events,imgUrl){
     const card=document.createElement('div');
     card.style.cssText='background:var(--bg);border-radius:9px;padding:12px;margin-bottom:10px;';
     card.innerHTML=
-      '<div style="font-size:12px;font-weight:700;color:var(--'+t+');margin-bottom:3px">'+(ev.date||'日付不明')+' '+TI[t].i+' '+t.toUpperCase()+'</div>'+
+      '<div style="font-size:12px;font-weight:700;color:var(--'+t+');margin-bottom:3px">'+(isPastDate(ev.date||'')?'<span style="color:#e53935">⚠️ '+ev.date+'（過去日付）</span>':(ev.date||'日付不明'))+' '+TI[t].i+' '+t.toUpperCase()+'</div>'+
       '<div style="font-size:13px;font-weight:700;margin-bottom:4px">'+(ev.ttl||'（タイトルなし）')+'</div>'+
       (ev.ve?'<div style="font-size:11px;color:var(--muted)">📍 '+ev.ve+'</div>':'')+
       (ev.matches&&ev.matches.length?'<div style="font-size:11px;color:var(--muted)">⚽ '+ev.matches.length+'試合</div>':'')+
@@ -1443,6 +1458,7 @@ function showAiResults(events,imgUrl){
       document.getElementById('ai-modal').style.display='none';
       fillFormFromAi(window._aiEvs[idx],idx===0?window._aiUrls:[]);
       showToast('✅ フォームに入力しました');
+      warnPastDate();
     });
     body.appendChild(card);
   });
@@ -1464,6 +1480,7 @@ function loadFromParams(){
   ['ttl','ga','gv','dismiss','ve','vemap','gl','opponents','fee','mo'].forEach(k=>{
     const v=p.get(k);if(v!==null&&v!=='')document.getElementById('f-'+k).value=v;
   });
+  warnPastDate();
   window.history.replaceState({},'',window.location.pathname);
 }
 

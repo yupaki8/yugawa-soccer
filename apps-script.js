@@ -92,7 +92,10 @@ function doPost(e) {
     var apiKey = PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY');
     if (!apiKey) return json({ ok: false, error: 'CLAUDE_API_KEY が未設定です（スクリプトプロパティを確認）' });
 
-    var systemPrompt = 'あなたは試合案内から情報を抽出するAIです。\n画像・PDFを読み取り、以下のキーを使ったJSONの配列を出力してください（説明文・コードブロック等は不要）。\n1件でも必ず [{...}] の配列形式にすること。複数の日程が含まれる場合は複数オブジェクトの配列にすること。\n\n各オブジェクトのキー:\n- team: "fa"（湯川FA、U10〜U12）or "chu"（湯川中学校、U15）\n- type: "of"（公式戦）/ "tr"（練習試合・TRM）/ "ot"（その他）\n- cat: "U10" / "U11" / "U12" / "U15" / "その他"\n- date: "YYYY-MM-DD"\n- ttl: タイトル・大会名\n- ga: "HH:MM"（クラブハウス集合時刻）\n- gv: "HH:MM"（会場集合時刻）\n- dismiss: "HH:MM"（解散予定）\n- ve: 会場名\n- gl: 集合場所\n- matches: 試合リスト（配列）。例: [{"opp":"vs 中間FC","ko":"10:00"}]。KO時刻不明なら ko を省略。\n- fee: 参加費・交通費\n- mo: 持ち物・メモ\n\n読み取れない項目はキーごと省略。teamが不明なら"fa"。JSON配列のみ出力。';
+    var now = new Date();
+    var todayStr = Utilities.formatDate(now, 'Asia/Tokyo', 'yyyy-MM-dd');
+    var todayDow = ['日','月','火','水','木','金','土'][new Date(now.getTime() + 9 * 3600 * 1000).getUTCDay()];
+    var systemPrompt = 'あなたは試合案内から情報を抽出するAIです。今日は ' + todayStr + '（' + todayDow + '曜日）です。\n画像・PDFを読み取り、以下のキーを使ったJSONの配列を出力してください（説明文・コードブロック等は不要）。\n1件でも必ず [{...}] の配列形式にすること。複数の日程が含まれる場合は複数オブジェクトの配列にすること。\n\n日付の読み取りルール（重要）:\n- 和暦は西暦に変換する。令和N年 = 西暦(N+2018)年（例: 令和8年 = 2026年）。\n- 年の記載がない日付は、今日以降で最も近い年を採用する。\n- 試合案内は今後の予定である。読み取った日付が今日より前になった場合は年の読み取り・変換ミスを疑い、必ず見直すこと。\n- 日付に曜日が併記されている場合は、変換後の日付の曜日と一致するか検算する。一致しない場合は曜日が合う年に修正する。\n\n各オブジェクトのキー:\n- team: "fa"（湯川FA、U10〜U12）or "chu"（湯川中学校、U15）\n- type: "of"（公式戦）/ "tr"（練習試合・TRM）/ "ot"（その他）\n- cat: "U10" / "U11" / "U12" / "U15" / "その他"\n- date: "YYYY-MM-DD"\n- ttl: タイトル・大会名\n- ga: "HH:MM"（クラブハウス集合時刻）\n- gv: "HH:MM"（会場集合時刻）\n- dismiss: "HH:MM"（解散予定）\n- ve: 会場名\n- gl: 集合場所\n- matches: 試合リスト（配列）。例: [{"opp":"vs 中間FC","ko":"10:00"}]。KO時刻不明なら ko を省略。\n- fee: 参加費・交通費\n- mo: 持ち物・メモ\n\n読み取れない項目はキーごと省略。teamが不明なら"fa"。JSON配列のみ出力。';
 
     var contentItems = [];
     if (payload.images && payload.images.length) {
