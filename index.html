@@ -866,6 +866,7 @@ function openNew(){
   imgUrls=[];document.getElementById('f-imgurl').value='';
   document.getElementById('img-st').textContent='';renderImgThumbs();
   document.getElementById('f-dt').value=new Date().toISOString().slice(0,10);
+  document.getElementById('f-dt').style.borderColor='';
   document.getElementById('f-dt-end').value='';
   document.getElementById('fg-dtend').style.display='';
   document.getElementById('f-cat').value=t==='chu'?'U15':'U11';
@@ -905,6 +906,39 @@ function selType(tp){
   document.getElementById('tb-tr').className='tyb'+(tp==='tr'?' at':'');
   document.getElementById('tb-cu').className='tyb'+(tp==='cu'?' acu':'');
   document.getElementById('tb-ot').className='tyb'+(tp==='ot'?' ao':'');
+}
+
+function isPastDate(ds){
+  return /^\d{4}-\d{2}-\d{2}$/.test(ds)&&ds<new Date().toISOString().slice(0,10);
+}
+function isValidYmd(ds){
+  const d=new Date(ds+'T00:00:00');
+  return !isNaN(d)&&d.toISOString().slice(0,10)===ds;
+}
+// 過去日付を「今日以降で最も近い同じ月日」の年に補正（年の誤認識対策）
+function fixPastDate(ds){
+  if(!isPastDate(ds))return ds;
+  const today=new Date().toISOString().slice(0,10),md=ds.slice(4);
+  let y=parseInt(today.slice(0,4),10);
+  if(y+md<today)y++;
+  while(!isValidYmd(y+md))y++;
+  return y+md;
+}
+// AI解析・URLパラメータ由来の日付が過去だったら自動補正して通知
+function autoFixPastDate(){
+  const el=document.getElementById('f-dt'),orig=el.value;
+  if(!isPastDate(orig))return false;
+  const fixed=fixPastDate(orig);
+  const endEl=document.getElementById('f-dt-end');
+  if(/^\d{4}-\d{2}-\d{2}$/.test(endEl.value)){
+    const delta=parseInt(fixed.slice(0,4),10)-parseInt(orig.slice(0,4),10);
+    const endFixed=(parseInt(endEl.value.slice(0,4),10)+delta)+endEl.value.slice(4);
+    if(isValidYmd(endFixed))endEl.value=endFixed;
+  }
+  el.value=fixed;
+  el.style.borderColor='#f59e0b';
+  showToast('⚠️ 過去日付「'+orig+'」を「'+fixed+'」に自動補正しました。日付をご確認ください',7000);
+  return true;
 }
 
 function dateRange(start,end){
@@ -1298,6 +1332,7 @@ async function saveDraft(){
 
 // ===== ユーティリティ =====
 function showToast(msg,ms){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),ms||2800);}
+document.getElementById('f-dt').addEventListener('input',function(){this.style.borderColor='';});
 ['dm','nm','ai-modal','ai-stage-modal'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('open');});});
 document.getElementById('fm').addEventListener('click',e=>{
   if(e.target.id!=='fm')return;
@@ -1401,6 +1436,7 @@ async function aiAnalyze(){
   if(events.length===1){
     fillFormFromAi(events[0],_aiUrls);
     showToast('✅ AI読み込み完了');
+    autoFixPastDate();
   }else{
     showAiResults(events,_aiUrls);
   }
@@ -1432,7 +1468,7 @@ function showAiResults(events,imgUrl){
     const card=document.createElement('div');
     card.style.cssText='background:var(--bg);border-radius:9px;padding:12px;margin-bottom:10px;';
     card.innerHTML=
-      '<div style="font-size:12px;font-weight:700;color:var(--'+t+');margin-bottom:3px">'+(ev.date||'日付不明')+' '+TI[t].i+' '+t.toUpperCase()+'</div>'+
+      '<div style="font-size:12px;font-weight:700;color:var(--'+t+');margin-bottom:3px">'+(isPastDate(ev.date||'')?'<span style="color:#f59e0b">⚠️ '+ev.date+' → '+fixPastDate(ev.date)+'（自動補正）</span>':(ev.date||'日付不明'))+' '+TI[t].i+' '+t.toUpperCase()+'</div>'+
       '<div style="font-size:13px;font-weight:700;margin-bottom:4px">'+(ev.ttl||'（タイトルなし）')+'</div>'+
       (ev.ve?'<div style="font-size:11px;color:var(--muted)">📍 '+ev.ve+'</div>':'')+
       (ev.matches&&ev.matches.length?'<div style="font-size:11px;color:var(--muted)">⚽ '+ev.matches.length+'試合</div>':'')+
@@ -1443,6 +1479,7 @@ function showAiResults(events,imgUrl){
       document.getElementById('ai-modal').style.display='none';
       fillFormFromAi(window._aiEvs[idx],idx===0?window._aiUrls:[]);
       showToast('✅ フォームに入力しました');
+      autoFixPastDate();
     });
     body.appendChild(card);
   });
@@ -1464,6 +1501,7 @@ function loadFromParams(){
   ['ttl','ga','gv','dismiss','ve','vemap','gl','opponents','fee','mo'].forEach(k=>{
     const v=p.get(k);if(v!==null&&v!=='')document.getElementById('f-'+k).value=v;
   });
+  autoFixPastDate();
   window.history.replaceState({},'',window.location.pathname);
 }
 
