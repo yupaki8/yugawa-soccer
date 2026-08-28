@@ -1333,6 +1333,10 @@ async function saveDraft(){
 // ===== ユーティリティ =====
 function showToast(msg,ms){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),ms||2800);}
 document.getElementById('f-dt').addEventListener('input',function(){this.style.borderColor='';});
+document.getElementById('f-ve').addEventListener('input',function(){
+  const v=this.value.trim();
+  document.getElementById('f-vemap').value=v?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v):'';
+});
 ['dm','nm','ai-modal','ai-stage-modal'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('open');});});
 document.getElementById('fm').addEventListener('click',e=>{
   if(e.target.id!=='fm')return;
