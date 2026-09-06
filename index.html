@@ -226,7 +226,14 @@ button,input,select,textarea{font-size:inherit;}
 .rrow-top,.rrow-mid,.grow{display:flex;align-items:center;gap:6px;}
 .rrow-top .r-opp{flex:1;min-width:0;}
 .rrow-top .r-ko{width:96px;flex-shrink:0;padding-left:8px;padding-right:6px;}
-.rrow-mid .r-sc{width:52px;flex-shrink:0;text-align:center;padding-left:4px;padding-right:4px;}
+.rrow-mid .r-sc{width:44px;flex-shrink:0;text-align:center;padding-left:4px;padding-right:4px;font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;cursor:default;}
+.r-inc{width:36px;height:36px;flex-shrink:0;padding:0;border-radius:50%;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.r-inc.fa{color:var(--fa);}.r-inc.chu{color:var(--chu);}
+.r-inc.fa:active{background:var(--fa-l);border-color:var(--fa);}.r-inc.chu:active{background:var(--chu-l);border-color:var(--chu);}
+.r-inc .icon{width:15px;height:15px;}
+.r-sclr{flex-shrink:0;background:none;border:none;color:var(--muted);cursor:pointer;padding:6px 2px 6px 6px;display:flex;align-items:center;justify-content:center;}
+.r-sclr:active{color:var(--lose);}
+.r-sclr .icon{width:16px;height:16px;}
 .grow .g-t{width:96px;flex-shrink:0;padding-left:8px;padding-right:6px;}
 .grow .g-n{flex:1;min-width:0;}
 .gadd{flex:1;min-width:0;min-height:44px;background:none;border:1.5px dashed var(--border);border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;}
@@ -1261,9 +1268,15 @@ function addResultRow(opp,ko,us,th,scorers,t){
   const goals=document.createElement('div');goals.className='goals';
   const koIn=document.createElement('input');koIn.className='fi '+t+' r-ko r-time';koIn.type='time';koIn.value=ko;koIn.title='キックオフ';
   const oppIn=document.createElement('input');oppIn.className='fi '+t+' r-opp';oppIn.placeholder='相手チーム名';oppIn.value=opp;
-  const usIn=document.createElement('input');usIn.className='fi '+t+' r-sc r-us';usIn.type='number';usIn.min='0';usIn.placeholder='自';usIn.value=us;usIn.style.textAlign='center';
+  const usIn=document.createElement('input');usIn.className='fi '+t+' r-sc r-us';usIn.type='text';usIn.readOnly=true;usIn.placeholder='自';usIn.value=us;usIn.style.textAlign='center';
+  const usPlus=document.createElement('button');usPlus.type='button';usPlus.className='r-inc '+t;usPlus.title='自チーム 得点+1';usPlus.innerHTML=ic('plus');
+  usPlus.onclick=function(){usIn.value=(parseInt(usIn.value)||0)+1;};
   const sep=document.createElement('div');sep.className='ss';sep.textContent='-';
-  const thIn=document.createElement('input');thIn.className='fi '+t+' r-sc r-th';thIn.type='number';thIn.min='0';thIn.placeholder='相';thIn.value=th;thIn.style.textAlign='center';
+  const thIn=document.createElement('input');thIn.className='fi '+t+' r-sc r-th';thIn.type='text';thIn.readOnly=true;thIn.placeholder='相';thIn.value=th;thIn.style.textAlign='center';
+  const thPlus=document.createElement('button');thPlus.type='button';thPlus.className='r-inc '+t;thPlus.title='相手 得点+1';thPlus.innerHTML=ic('plus');
+  thPlus.onclick=function(){thIn.value=(parseInt(thIn.value)||0)+1;};
+  const scClr=document.createElement('button');scClr.type='button';scClr.className='r-sclr';scClr.title='スコアをクリア';scClr.innerHTML=ic('refresh');
+  scClr.onclick=function(){if((usIn.value||thIn.value)&&!confirm('スコアをクリアしますか？'))return;usIn.value='';thIn.value='';};
   function addGoalRow(gt,gn){
     // 時計形式（HH:MM）以外の旧データ（例: 12分）は名前欄に退避して保持
     if(gt&&!/^\d{1,2}:\d{2}$/.test(gt)){gn=(gt+' '+(gn||'')).trim();gt='';}
@@ -1289,7 +1302,7 @@ function addResultRow(opp,ko,us,th,scorers,t){
     row.remove();
   };
   top.appendChild(koIn);top.appendChild(oppIn);top.appendChild(rm);
-  mid.appendChild(usIn);mid.appendChild(sep);mid.appendChild(thIn);mid.appendChild(gadd);
+  mid.appendChild(usIn);mid.appendChild(usPlus);mid.appendChild(sep);mid.appendChild(thIn);mid.appendChild(thPlus);mid.appendChild(scClr);mid.appendChild(gadd);
   row.appendChild(top);row.appendChild(mid);row.appendChild(goals);
   list.appendChild(row);
 }
