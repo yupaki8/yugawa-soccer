@@ -1271,12 +1271,14 @@ function addResultRow(opp,ko,us,th,scorers,t){
   const usIn=document.createElement('input');usIn.className='fi '+t+' r-sc r-us';usIn.type='text';usIn.readOnly=true;usIn.placeholder='自';usIn.value=us;usIn.style.textAlign='center';
   const usPlus=document.createElement('button');usPlus.type='button';usPlus.className='r-inc '+t;usPlus.title='自チーム 得点+1';usPlus.innerHTML=ic('plus');
   usPlus.onclick=function(){usIn.value=(parseInt(usIn.value)||0)+1;};
+  const usClr=document.createElement('button');usClr.type='button';usClr.className='r-sclr';usClr.title='自チームの得点をクリア';usClr.innerHTML=ic('refresh');
+  usClr.onclick=function(){if(usIn.value&&!confirm('自チームの得点をクリアしますか？'))return;usIn.value='';};
   const sep=document.createElement('div');sep.className='ss';sep.textContent='-';
   const thIn=document.createElement('input');thIn.className='fi '+t+' r-sc r-th';thIn.type='text';thIn.readOnly=true;thIn.placeholder='相';thIn.value=th;thIn.style.textAlign='center';
   const thPlus=document.createElement('button');thPlus.type='button';thPlus.className='r-inc '+t;thPlus.title='相手 得点+1';thPlus.innerHTML=ic('plus');
   thPlus.onclick=function(){thIn.value=(parseInt(thIn.value)||0)+1;};
-  const scClr=document.createElement('button');scClr.type='button';scClr.className='r-sclr';scClr.title='スコアをクリア';scClr.innerHTML=ic('refresh');
-  scClr.onclick=function(){if((usIn.value||thIn.value)&&!confirm('スコアをクリアしますか？'))return;usIn.value='';thIn.value='';};
+  const thClr=document.createElement('button');thClr.type='button';thClr.className='r-sclr';thClr.title='相手の得点をクリア';thClr.innerHTML=ic('refresh');
+  thClr.onclick=function(){if(thIn.value&&!confirm('相手の得点をクリアしますか？'))return;thIn.value='';};
   function addGoalRow(gt,gn){
     // 時計形式（HH:MM）以外の旧データ（例: 12分）は名前欄に退避して保持
     if(gt&&!/^\d{1,2}:\d{2}$/.test(gt)){gn=(gt+' '+(gn||'')).trim();gt='';}
@@ -1302,7 +1304,7 @@ function addResultRow(opp,ko,us,th,scorers,t){
     row.remove();
   };
   top.appendChild(koIn);top.appendChild(oppIn);top.appendChild(rm);
-  mid.appendChild(usIn);mid.appendChild(usPlus);mid.appendChild(sep);mid.appendChild(thIn);mid.appendChild(thPlus);mid.appendChild(scClr);mid.appendChild(gadd);
+  mid.appendChild(usIn);mid.appendChild(usPlus);mid.appendChild(usClr);mid.appendChild(sep);mid.appendChild(thIn);mid.appendChild(thPlus);mid.appendChild(thClr);mid.appendChild(gadd);
   row.appendChild(top);row.appendChild(mid);row.appendChild(goals);
   list.appendChild(row);
 }
