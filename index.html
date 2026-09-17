@@ -1452,7 +1452,10 @@ async function aiAnalyze(){
   if(nonPdfImgs.length){
     showToast('✅ AI完了 — 画像アップロード中...',10000);
     for(const img of nonPdfImgs){
-      const imgRes=await gasPostRaw({action:'uploadImage',filename:img.filename||'image.jpg',mimeType:'image/jpeg',base64:img.b64});
+      const imgRes=await Promise.race([
+        gasPostRaw({action:'uploadImage',filename:img.filename||'image.jpg',mimeType:'image/jpeg',base64:img.b64}),
+        new Promise(resolve=>setTimeout(()=>resolve(null),30000))
+      ]);
       if(imgRes&&imgRes.ok&&imgRes.url)_aiUrls.push(imgRes.url);
       else console.error('uploadImage failed:',imgRes);
     }
