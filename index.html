@@ -637,15 +637,21 @@ async function gasGet(sheet){
   }catch(e){ return null; }
 }
 
-async function gasPostRaw(payload){
+// GASへのPOSTは応答が返らない場合があるため、必ずタイムアウトで打ち切る
+// （モバイル回線が不安定だと fetch がいつまでも pending のままになり、
+//  呼び出し元のボタン等が永久に無効化されたままになる不具合があったため）
+async function gasPostRaw(payload,timeoutMs){
   if(!GAS_URL)return null;
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(),timeoutMs||45000);
   try{
-    const res=await fetch(GAS_URL,{method:'POST',body:JSON.stringify(payload)});
+    const res=await fetch(GAS_URL,{method:'POST',body:JSON.stringify(payload),signal:ctrl.signal});
     return await res.json();
   }catch(e){return null;}
+  finally{clearTimeout(timer);}
 }
-async function gasPost(payload){
-  const d=await gasPostRaw(payload);
+async function gasPost(payload,timeoutMs){
+  const d=await gasPostRaw(payload,timeoutMs);
   return d!==null&&d.ok===true;
 }
 
@@ -1425,19 +1431,16 @@ async function aiAnalyze(){
   addBtn.disabled=true;
 
   const images=_aiStaged;
-  let aiResult,timedOut=false;
+  let aiResult;
   try{
-    aiResult=await Promise.race([
-      gasPostRaw({action:'analyzeImage',images:images.map(i=>({base64:i.b64,mimeType:i.mimeType,filename:i.filename}))}),
-      new Promise(resolve=>setTimeout(()=>{timedOut=true;resolve(null);},90000))
-    ]);
+    aiResult=await gasPostRaw({action:'analyzeImage',images:images.map(i=>({base64:i.b64,mimeType:i.mimeType,filename:i.filename}))},90000);
   }finally{
     anaBtn.disabled=false;anaBtn.textContent='🤖 AI解析';
     addBtn.disabled=false;
   }
 
   if(!aiResult||!aiResult.ok){
-    showToast('❌ AI失敗: '+(timedOut?'タイムアウトしました。もう一度お試しください':(aiResult&&aiResult.error?aiResult.error:'接続エラー')));return;
+    showToast('❌ AI失敗: '+(aiResult&&aiResult.error?aiResult.error:'接続エラー（タイムアウトの可能性があります）'));return;
   }
 
   let events;
@@ -1452,7 +1455,7 @@ async function aiAnalyze(){
   if(nonPdfImgs.length){
     showToast('✅ AI完了 — 画像アップロード中...',10000);
     for(const img of nonPdfImgs){
-      const imgRes=await gasPostRaw({action:'uploadImage',filename:img.filename||'image.jpg',mimeType:'image/jpeg',base64:img.b64});
+      const imgRes=await gasPostRaw({action:'uploadImage',filename:img.filename||'image.jpg',mimeType:'image/jpeg',base64:img.b64},30000);
       if(imgRes&&imgRes.ok&&imgRes.url)_aiUrls.push(imgRes.url);
       else console.error('uploadImage failed:',imgRes);
     }
