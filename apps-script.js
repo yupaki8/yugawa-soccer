@@ -24,6 +24,14 @@ function doGet(e) {
 }
 
 function doPost(e) {
+  try {
+    return doPostInner(e);
+  } catch (err) {
+    return json({ ok: false, error: String(err && err.message ? err.message : err) });
+  }
+}
+
+function doPostInner(e) {
   var payload = JSON.parse(e.postData.contents);
   var action = payload.action;
   var sheetName = payload.sheet;

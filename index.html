@@ -1420,17 +1420,24 @@ async function aiStageFile(input){
 async function aiAnalyze(){
   if(!_aiStaged.length)return;
   const anaBtn=document.getElementById('ai-analyze-btn');
+  const addBtn=document.getElementById('ai-add-btn');
   anaBtn.disabled=true;anaBtn.textContent='⏳ 解析中...';
-  document.getElementById('ai-add-btn').disabled=true;
+  addBtn.disabled=true;
 
   const images=_aiStaged;
-  const aiResult=await gasPostRaw({action:'analyzeImage',images:images.map(i=>({base64:i.b64,mimeType:i.mimeType,filename:i.filename}))});
-
-  anaBtn.disabled=false;anaBtn.textContent='🤖 AI解析';
-  document.getElementById('ai-add-btn').disabled=false;
+  let aiResult,timedOut=false;
+  try{
+    aiResult=await Promise.race([
+      gasPostRaw({action:'analyzeImage',images:images.map(i=>({base64:i.b64,mimeType:i.mimeType,filename:i.filename}))}),
+      new Promise(resolve=>setTimeout(()=>{timedOut=true;resolve(null);},90000))
+    ]);
+  }finally{
+    anaBtn.disabled=false;anaBtn.textContent='🤖 AI解析';
+    addBtn.disabled=false;
+  }
 
   if(!aiResult||!aiResult.ok){
-    showToast('❌ AI失敗: '+(aiResult&&aiResult.error?aiResult.error:'接続エラー'));return;
+    showToast('❌ AI失敗: '+(timedOut?'タイムアウトしました。もう一度お試しください':(aiResult&&aiResult.error?aiResult.error:'接続エラー')));return;
   }
 
   let events;
