@@ -168,7 +168,7 @@ button,input,select,textarea{font-size:inherit;}
 @keyframes sup{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
 /* フォームモーダルはヘッダー/フッターを固定し、中央のみスクロールさせる */
 .modal.modal-fm{display:flex;flex-direction:column;overflow-y:hidden;padding-bottom:0;}
-.modal.modal-fm>.mh,.modal.modal-fm>.mhdr{flex:none;}
+.modal.modal-fm>.mh,.modal.modal-fm>.mhdr,.modal.modal-fm>#fm-timer{flex:none;}
 .modal.modal-fm>.mbody{flex:1 1 auto;min-height:0;overflow-y:auto;padding-bottom:16px;}
 .mh{width:36px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0;}
 .mhdr{padding:14px 16px 0;display:flex;justify-content:space-between;align-items:center;}
@@ -227,10 +227,10 @@ button,input,select,textarea{font-size:inherit;}
 .timer-btn2.go.chu{background:var(--chu);}
 .timer-btn2.pause{background:var(--acc);color:#8a5e00;}
 .timer-btn2.rst{background:none;border:1.5px solid var(--border);color:var(--muted);}
-.fm-timer-box{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:var(--r-sm);margin-bottom:12px;background:var(--bg);border:1.5px solid var(--border);}
-.fm-timer-box .ftd{font-family:'Oswald',sans-serif;font-size:22px;font-weight:600;}
+.fm-timer-box{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 16px;background:var(--bg);border-bottom:1px solid var(--border);}
+.fm-timer-box .ftd{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;}
 .fm-timer-box .ftd.zero{color:var(--lose);}
-.fm-timer-stop{flex-shrink:0;padding:8px 14px;border:none;border-radius:var(--r-sm);background:var(--lose);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+.fm-timer-stop{flex-shrink:0;padding:4px 10px;border:none;border-radius:var(--r-sm);background:var(--lose);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
 .edb{width:100%;margin-top:14px;background:none;border-radius:12px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .1s;}
 .edb:active{transform:scale(.98);}
 .edb.fa{color:var(--fa);border:1.5px solid var(--fa);}
@@ -465,9 +465,9 @@ button,input,select,textarea{font-size:inherit;}
       <div class="mtitle" id="fm-title">試合を登録</div>
       <button class="mclose" onclick="closeFm()">&#10005;</button>
     </div>
+    <div id="fm-timer" style="display:none"></div>
     <div class="mbody">
 <div class="tbn fa" id="fm-banner">⚽ 湯川FA の試合</div>
-      <div id="fm-timer" style="display:none"></div>
       <div class="fsec">基本情報</div>
       <div class="fg"><label class="fl">チーム</label>
         <div class="tys">
