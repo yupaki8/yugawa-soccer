@@ -230,13 +230,13 @@ button,input,select,textarea{font-size:inherit;}
 .inline-timer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 16px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;row-gap:4px;}
 .inline-timer .itd{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;}
 .inline-timer .itd.zero{color:var(--lose);}
-.inline-timer-controls{display:flex;align-items:center;gap:6px;flex-shrink:0;}
-.inline-timer-min{width:48px;padding:4px 5px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:center;background:var(--card);color:var(--text);}
+.inline-timer-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap;row-gap:4px;}
+.inline-timer-min{width:44px;padding:4px 5px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:center;background:var(--card);color:var(--text);}
 .inline-timer-btn{flex-shrink:0;padding:4px 10px;border:none;border-radius:var(--r-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;color:#fff;}
 .inline-timer-btn.go{background:var(--fa);}
 .inline-timer-btn.go.chu{background:var(--chu);}
 .inline-timer-btn.pause{background:var(--lose);}
-.inline-timer-btn.rst{background:none;border:1px solid var(--border);color:var(--muted);}
+.inline-timer-btn.rst,.inline-timer-btn.set{background:none;border:1px solid var(--border);color:var(--muted);}
 .edb{width:100%;margin-top:14px;background:none;border-radius:12px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .1s;}
 .edb:active{transform:scale(.98);}
 .edb.fa{color:var(--fa);border:1.5px solid var(--fa);}
@@ -1689,9 +1689,12 @@ function timerInlineHtml(idPfx){
   }
   const rem=timerRemainingSec();
   const zero=rem<=0;
+  const curMin=Math.round((s.durationSec||900)/60);
   return '<div>'+ic('clock')+' <span class="itd'+(zero?' zero':'')+'">'+fmtClock(rem)+'</span>'+
     '<span style="font-size:11px;color:var(--muted);margin-left:6px">'+(s.running?'計測中':'停止中')+'</span></div>'+
     '<div class="inline-timer-controls">'+
+    '<input type="number" min="1" max="120" class="inline-timer-min" id="itmin-'+idPfx+'" value="'+curMin+'" title="分数を変更して「変更」を押すと、その時間で計測し直します">'+
+    '<button type="button" class="inline-timer-btn set" onclick="timerStart(parseInt(document.getElementById(\'itmin-'+idPfx+'\').value)||15)">変更</button>'+
     (s.running
       ?'<button type="button" class="inline-timer-btn pause" onclick="timerPause()">停止</button>'
       :'<button type="button" class="inline-timer-btn go '+team+'" onclick="timerResume()">再開</button>')+
