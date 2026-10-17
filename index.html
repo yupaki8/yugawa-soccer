@@ -1615,23 +1615,34 @@ function timerRemainingSec(){
   }
   return s.pausedRemaining;
 }
+// 分数入力にフォーカスが残ったままだと再描画がスキップされ続け、
+// ボタン操作が画面に反映されないように見えるため、操作ボタン側で
+// 明示的にフォーカスを外してから再描画する（iOSでは要素タップが
+// 必ずしも直前のinputのblurを引き起こさないため）
+function timerBlurActive(){
+  if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+}
 function timerStart(minutes){
+  timerBlurActive();
   const dur=minutes*60;
   localStorage.setItem(TIMER_LASTMIN_KEY,String(minutes));
   timerSave({durationSec:dur,pausedRemaining:dur,startedAt:Date.now(),running:true});
   renderAllTimerUI();
 }
 function timerPause(){
+  timerBlurActive();
   const s=timerLoad();if(!s||!s.running)return;
   s.pausedRemaining=timerRemainingSec();s.running=false;
   timerSave(s);renderAllTimerUI();
 }
 function timerResume(){
+  timerBlurActive();
   const s=timerLoad();if(!s||s.running)return;
   s.startedAt=Date.now();s.running=true;
   timerSave(s);renderAllTimerUI();
 }
 function timerReset(){
+  timerBlurActive();
   timerClearState();renderAllTimerUI();
 }
 function renderAllTimerUI(){renderTimerModal();renderFmTimer();renderDmTimer();}
