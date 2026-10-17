@@ -1704,6 +1704,10 @@ function timerInlineHtml(idPfx){
 function renderFmTimer(){
   const box=document.getElementById('fm-timer');
   if(!box)return;
+  // 分数入力を編集中にinnerHTMLごと作り直すと要素が破棄され、
+  // 開いたばかりのソフトキーボードが閉じてしまうため、
+  // フォーカスが当たっている間は再描画をスキップする
+  if(box.contains(document.activeElement))return;
   box.style.display='';
   box.className='inline-timer';
   box.innerHTML=timerInlineHtml('fm');
@@ -1711,6 +1715,7 @@ function renderFmTimer(){
 function renderDmTimer(){
   const box=document.getElementById('dm-timer');
   if(!box)return;
+  if(box.contains(document.activeElement))return;
   box.style.display='';
   box.className='inline-timer';
   box.innerHTML=timerInlineHtml('dm');
