@@ -227,10 +227,16 @@ button,input,select,textarea{font-size:inherit;}
 .timer-btn2.go.chu{background:var(--chu);}
 .timer-btn2.pause{background:var(--acc);color:#8a5e00;}
 .timer-btn2.rst{background:none;border:1.5px solid var(--border);color:var(--muted);}
-.fm-timer-box{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 16px;background:var(--bg);border-bottom:1px solid var(--border);}
-.fm-timer-box .ftd{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;}
-.fm-timer-box .ftd.zero{color:var(--lose);}
-.fm-timer-stop{flex-shrink:0;padding:4px 10px;border:none;border-radius:var(--r-sm);background:var(--lose);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+.inline-timer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 16px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;row-gap:4px;}
+.inline-timer .itd{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;}
+.inline-timer .itd.zero{color:var(--lose);}
+.inline-timer-controls{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.inline-timer-min{width:48px;padding:4px 5px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:center;background:var(--card);color:var(--text);}
+.inline-timer-btn{flex-shrink:0;padding:4px 10px;border:none;border-radius:var(--r-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;color:#fff;}
+.inline-timer-btn.go{background:var(--fa);}
+.inline-timer-btn.go.chu{background:var(--chu);}
+.inline-timer-btn.pause{background:var(--lose);}
+.inline-timer-btn.rst{background:none;border:1px solid var(--border);color:var(--muted);}
 .edb{width:100%;margin-top:14px;background:none;border-radius:12px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .1s;}
 .edb:active{transform:scale(.98);}
 .edb.fa{color:var(--fa);border:1.5px solid var(--fa);}
@@ -574,6 +580,7 @@ button,input,select,textarea{font-size:inherit;}
       <div class="mtitle" id="dm-title">試合詳細</div>
       <button class="mclose" onclick="closeDm()">&#10005;</button>
     </div>
+    <div id="dm-timer" style="display:none"></div>
     <div class="mbody" id="dm-body"></div>
   </div>
 </div>
@@ -1080,6 +1087,7 @@ function openDetail(id){
   h+='<button class="edb '+t+'" onclick="openEdit(\''+id+'\')">'+ic('edit')+'編集</button>';
   h+='<button class="delb" onclick="delEv(\''+id+'\')">'+ic('trash','icon-sm')+'削除</button>';
   document.getElementById('dm-body').innerHTML=h;
+  renderDmTimer();
   document.getElementById('dm').classList.add('open');
 }
 function closeDm(){document.getElementById('dm').classList.remove('open');}
@@ -1611,28 +1619,29 @@ function timerStart(minutes){
   const dur=minutes*60;
   localStorage.setItem(TIMER_LASTMIN_KEY,String(minutes));
   timerSave({durationSec:dur,pausedRemaining:dur,startedAt:Date.now(),running:true});
-  renderTimerModal();renderFmTimer();
+  renderAllTimerUI();
 }
 function timerPause(){
   const s=timerLoad();if(!s||!s.running)return;
   s.pausedRemaining=timerRemainingSec();s.running=false;
-  timerSave(s);renderTimerModal();renderFmTimer();
+  timerSave(s);renderAllTimerUI();
 }
 function timerResume(){
   const s=timerLoad();if(!s||s.running)return;
   s.startedAt=Date.now();s.running=true;
-  timerSave(s);renderTimerModal();renderFmTimer();
+  timerSave(s);renderAllTimerUI();
 }
 function timerReset(){
-  timerClearState();renderTimerModal();renderFmTimer();
+  timerClearState();renderAllTimerUI();
 }
+function renderAllTimerUI(){renderTimerModal();renderFmTimer();renderDmTimer();}
 function timerTick(){
   const s=timerLoad();
   if(s&&s.running&&timerRemainingSec()<=0){
     s.pausedRemaining=0;s.running=false;timerSave(s);
     showToast('⏰ タイマーが0:00になりました');
   }
-  renderTimerModal();renderFmTimer();
+  renderAllTimerUI();
 }
 function openTimerModal(){renderTimerModal();document.getElementById('timer-modal').classList.add('open');}
 function closeTimerModal(){document.getElementById('timer-modal').classList.remove('open');}
@@ -1666,26 +1675,49 @@ function renderTimerModal(){
     '</div>'+
     '<div class="timer-btns"><button type="button" class="timer-btn2 rst" onclick="timerReset()">リセット</button></div>';
 }
+// 編集画面・詳細画面を開いたままでもタイマーを操作できるよう、
+// どちらの画面にも同じ内容の簡易タイマーUIを埋め込む
+function timerInlineHtml(idPfx){
+  const s=timerLoad();
+  if(!s){
+    const lastMin=parseInt(localStorage.getItem(TIMER_LASTMIN_KEY))||15;
+    return '<div>'+ic('clock')+' <span style="font-size:12px;color:var(--muted)">タイマー未使用</span></div>'+
+      '<div class="inline-timer-controls">'+
+      '<input type="number" min="1" max="120" class="inline-timer-min" id="itmin-'+idPfx+'" value="'+lastMin+'">'+
+      '<button type="button" class="inline-timer-btn go '+team+'" onclick="timerStart(parseInt(document.getElementById(\'itmin-'+idPfx+'\').value)||15)">開始</button>'+
+      '</div>';
+  }
+  const rem=timerRemainingSec();
+  const zero=rem<=0;
+  return '<div>'+ic('clock')+' <span class="itd'+(zero?' zero':'')+'">'+fmtClock(rem)+'</span>'+
+    '<span style="font-size:11px;color:var(--muted);margin-left:6px">'+(s.running?'計測中':'停止中')+'</span></div>'+
+    '<div class="inline-timer-controls">'+
+    (s.running
+      ?'<button type="button" class="inline-timer-btn pause" onclick="timerPause()">停止</button>'
+      :'<button type="button" class="inline-timer-btn go '+team+'" onclick="timerResume()">再開</button>')+
+    '<button type="button" class="inline-timer-btn rst" onclick="timerReset()">リセット</button>'+
+    '</div>';
+}
 function renderFmTimer(){
   const box=document.getElementById('fm-timer');
   if(!box)return;
-  const s=timerLoad();
-  if(!s){box.style.display='none';box.innerHTML='';return;}
-  const rem=timerRemainingSec();
-  const zero=rem<=0;
   box.style.display='';
-  box.className='fm-timer-box';
-  box.innerHTML=
-    '<div>'+ic('clock')+' <span class="ftd'+(zero?' zero':'')+'">'+fmtClock(rem)+'</span>'+
-    '<span style="font-size:11px;color:var(--muted);margin-left:6px">'+(s.running?'計測中':'停止中')+'</span></div>'+
-    (s.running?'<button type="button" class="fm-timer-stop" onclick="timerPause()">停止</button>':'');
+  box.className='inline-timer';
+  box.innerHTML=timerInlineHtml('fm');
+}
+function renderDmTimer(){
+  const box=document.getElementById('dm-timer');
+  if(!box)return;
+  box.style.display='';
+  box.className='inline-timer';
+  box.innerHTML=timerInlineHtml('dm');
 }
 setInterval(timerTick,1000);
 
 // ===== 初期化 =====
 loadCache();
 updCnts();renderCal();renderList();
-renderTimerModal();renderFmTimer();
+renderAllTimerUI();
 if(GAS_URL){ document.getElementById('gas-url').value=GAS_URL; syncAll(); }
 else { setSyncStatus('err','設定タブでApps Script URLを入力してください'); }
 loadFromParams();
