@@ -1648,7 +1648,11 @@ function timerReset(){
 function renderAllTimerUI(){renderTimerModal();renderFmTimer();renderDmTimer();}
 function timerTick(){
   const s=timerLoad();
-  if(s&&s.running&&timerRemainingSec()<=0){
+  // タイマー未使用（分数入力待ち）の時は表示上の変化が無いため再描画しない。
+  // ここで毎秒再描画すると、入力中の分数やプリセットボタンでの変更が
+  // 1秒以内に元の値へ巻き戻って見える不具合になる
+  if(!s)return;
+  if(s.running&&timerRemainingSec()<=0){
     s.pausedRemaining=0;s.running=false;timerSave(s);
     showToast('⏰ タイマーが0:00になりました');
   }
