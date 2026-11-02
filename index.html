@@ -34,9 +34,11 @@ button,input,select,textarea{font-size:inherit;}
 .hdr{color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 10px rgba(0,0,0,.12);}
 .hdr.fa{background:linear-gradient(135deg,#1f7a44,#154227);}
 .hdr.chu{background:linear-gradient(135deg,#1f57a3,#0f2f5c);}
-.hdr-title{font-family:'Oswald',sans-serif;font-size:19px;letter-spacing:1px;}
-.hdr-sub{font-size:10px;opacity:.75;margin-top:2px;letter-spacing:.3px;}
-.hb-ai{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:transform .12s var(--ease),background .15s;}
+.hdr-brand{min-width:0;overflow:hidden;}
+.hdr-title{font-family:'Oswald',sans-serif;font-size:19px;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hdr-sub{font-size:10px;opacity:.75;margin-top:2px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hb-ai{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:20px;padding:8px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:transform .12s var(--ease),background .15s;white-space:nowrap;}
+.hb-ai .icon{width:15px;height:15px;}
 .hb-ai:active{background:rgba(255,255,255,.3);transform:scale(.96);}
 
 /* 同期ステータスバー */
@@ -312,18 +314,18 @@ button,input,select,textarea{font-size:inherit;}
 <div class="app">
 
 <div class="hdr fa" id="hdr">
-  <div>
+  <div class="hdr-brand">
     <div class="hdr-title">⚽🏫 湯川サッカー</div>
     <div class="hdr-sub">スケジュール管理</div>
   </div>
-  <div style="display:flex;align-items:center;gap:8px">
+  <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
     <button class="hb-ai" onclick="openTimerModal()" id="timer-btn" title="試合タイマー">
       <svg class="icon"><use href="#i-clock"></use></svg>
       <span id="timer-btn-label">タイマー</span>
     </button>
     <button class="hb-ai" onclick="aiImport()" id="ai-btn" title="AI読み込み">
       <svg class="icon"><use href="#i-camera"></use></svg>
-      <span>AI読み込み</span>
+      <span>AI読込</span>
     </button>
   </div>
 </div>
@@ -1629,6 +1631,17 @@ function timerStart(minutes){
   timerSave({durationSec:dur,pausedRemaining:dur,startedAt:Date.now(),running:true});
   renderAllTimerUI();
 }
+// 稼働中・停止中に時間だけを変更する（「変更」ボタン用）。
+// timerStartと違い、計測中はそのまま計測中・停止中はそのまま
+// 停止中として新しい時間を適用する（勝手に計測が再開しないように）
+function timerChangeDuration(minutes){
+  timerBlurActive();
+  const s=timerLoad();if(!s)return;
+  const dur=minutes*60;
+  localStorage.setItem(TIMER_LASTMIN_KEY,String(minutes));
+  timerSave({durationSec:dur,pausedRemaining:dur,startedAt:Date.now(),running:s.running});
+  renderAllTimerUI();
+}
 function timerPause(){
   timerBlurActive();
   const s=timerLoad();if(!s||!s.running)return;
@@ -1709,7 +1722,7 @@ function timerInlineHtml(idPfx){
     '<span style="font-size:11px;color:var(--muted);margin-left:6px">'+(s.running?'計測中':'停止中')+'</span></div>'+
     '<div class="inline-timer-controls">'+
     '<input type="number" min="1" max="120" class="inline-timer-min" id="itmin-'+idPfx+'" value="'+curMin+'" title="分数を変更して「変更」を押すと、その時間で計測し直します">'+
-    '<button type="button" class="inline-timer-btn set" onclick="timerStart(parseInt(document.getElementById(\'itmin-'+idPfx+'\').value)||15)">変更</button>'+
+    '<button type="button" class="inline-timer-btn set" onclick="timerChangeDuration(parseInt(document.getElementById(\'itmin-'+idPfx+'\').value)||15)">変更</button>'+
     (s.running
       ?'<button type="button" class="inline-timer-btn pause" onclick="timerPause()">停止</button>'
       :'<button type="button" class="inline-timer-btn go '+team+'" onclick="timerResume()">再開</button>')+
