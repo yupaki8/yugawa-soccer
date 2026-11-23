@@ -170,8 +170,16 @@ button,input,select,textarea{font-size:inherit;}
 @keyframes sup{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
 /* フォームモーダルはヘッダー/フッターを固定し、中央のみスクロールさせる */
 .modal.modal-fm{display:flex;flex-direction:column;overflow-y:hidden;padding-bottom:0;}
-.modal.modal-fm>.mh,.modal.modal-fm>.mhdr,.modal.modal-fm>#fm-timer{flex:none;}
+.modal.modal-fm>.mh,.modal.modal-fm>.mhdr,.modal.modal-fm>#fm-timer,.modal.modal-fm>#focus-timer{flex:none;}
 .modal.modal-fm>.mbody{flex:1 1 auto;min-height:0;overflow-y:auto;padding-bottom:16px;}
+/* 集中モード：試合中に他の項目を誤操作しないよう、1試合分の結果だけを全画面表示する */
+#focus-mode{z-index:110;}
+.focus-row-wrap .rrow{border:none;padding:0;margin-bottom:0;}
+.focus-row-wrap .r-inc{width:52px;height:52px;}
+.focus-row-wrap .r-inc .icon{width:22px;height:22px;}
+.focus-row-wrap .r-sc{width:64px;font-size:28px;}
+.focus-row-wrap .gadd{min-height:52px;font-size:14px;}
+.focus-row-wrap .r-rm,.focus-row-wrap .r-focus{display:none;}
 .mh{width:36px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0;}
 .mhdr{padding:14px 16px 0;display:flex;justify-content:space-between;align-items:center;}
 .mtitle{font-size:15px;font-weight:700;}
@@ -266,6 +274,8 @@ button,input,select,textarea{font-size:inherit;}
 .gadd{flex:1;min-width:0;min-height:44px;background:none;border:1.5px dashed var(--border);border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;}
 .gadd.fa:active{border-color:var(--fa);color:var(--fa);}.gadd.chu:active{border-color:var(--chu);color:var(--chu);}
 .r-rm{background:none;border:none;color:var(--lose);cursor:pointer;font-size:18px;line-height:1;padding:6px 4px 6px 10px;flex-shrink:0;margin-left:4px;}
+.r-focus{background:none;border:none;color:var(--muted);cursor:pointer;font-size:17px;line-height:1;padding:6px 2px;flex-shrink:0;}
+.r-focus:active{color:var(--text);}
 .radd{width:100%;background:none;border:1.5px dashed var(--border);border-radius:var(--r-sm);padding:9px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);font-family:'Noto Sans JP',sans-serif;}
 .radd.fa:active{border-color:var(--fa);color:var(--fa);}.radd.chu:active{border-color:var(--chu);color:var(--chu);}
 .img-area{border:2px dashed var(--border);border-radius:var(--r-sm);padding:10px;color:var(--muted);font-size:12px;transition:border-color .2s,color .2s;}
@@ -596,6 +606,22 @@ button,input,select,textarea{font-size:inherit;}
       <button class="mclose" onclick="closeTimerModal()">&#10005;</button>
     </div>
     <div class="mbody" id="timer-modal-body"></div>
+  </div>
+</div>
+
+<!-- 集中モード：1試合分の結果入力だけを全画面表示 -->
+<div class="mbg" id="focus-mode">
+  <div class="modal modal-fm">
+    <div class="mh"></div>
+    <div class="mhdr">
+      <div class="mtitle" id="focus-title">⚽ 試合に集中</div>
+      <button class="mclose" onclick="closeFocusMode()">&#10005;</button>
+    </div>
+    <div id="focus-timer" style="display:none"></div>
+    <div class="mbody">
+      <div id="focus-slot" class="focus-row-wrap"></div>
+      <button class="edb fa" id="focus-save-btn" onclick="saveDraft()" style="margin-top:16px">一時保存</button>
+    </div>
   </div>
 </div>
 
@@ -946,7 +972,7 @@ function closeFm(){
 function fmHasData(){
   const ids=['f-ttl','f-ve','f-vemap','f-gl','f-opponents','f-fee','f-mo'];
   if(ids.some(id=>document.getElementById(id).value.trim()))return true;
-  if(document.querySelectorAll('#results-list .rrow').length)return true;
+  if(allResultRows().length)return true;
   if(imgUrls.length)return true;
   return false;
 }
@@ -1020,7 +1046,7 @@ async function saveEv(){
   const dates=(!eid&&dtEnd&&dtEnd>dt)?dateRange(dt,dtEnd):[dt];
   const btn=document.getElementById('sav-btn');btn.disabled=true;
   document.getElementById('sav-txt').innerHTML='<span class="spin"></span> 保存中...';
-  const rrows=document.querySelectorAll('#results-list .rrow');
+  const rrows=allResultRows();
   const results=[];
   rrows.forEach(row=>{const opp=stripVs(row.querySelector('.r-opp').value),ko=row.querySelector('.r-time').value,us=row.querySelector('.r-us').value,th=row.querySelector('.r-th').value,scorers=collectScorers(row);if(opp||ko||us!==''||th!==''||scorers)results.push({opp,ko,us,th,scorers});});
   const base={team,type:selType_v,ttl,
@@ -1318,6 +1344,11 @@ function collectScorers(row){
     return gt&&gn?gt+' '+gn:gt||gn;
   }).filter(Boolean).join(', ');
 }
+// 集中モード中は該当試合の.rrowが一時的に#focus-slotへ移動しているため、
+// 保存・入力チェック系の処理は必ずこの関数経由で試合結果行を取得すること
+function allResultRows(){
+  return [...document.querySelectorAll('#results-list .rrow'),...document.querySelectorAll('#focus-slot .rrow')];
+}
 function addResultRow(opp,ko,us,th,scorers,t){
   opp=stripVs(opp);ko=ko||'';us=us||'';th=th||'';scorers=scorers||'';t=t||team;
   const list=document.getElementById('results-list');
@@ -1360,9 +1391,13 @@ function addResultRow(opp,ko,us,th,scorers,t){
   rm.onclick=function(){
     const hasData=oppIn.value||usIn.value||thIn.value||Array.from(goals.querySelectorAll('input')).some(i=>i.value);
     if(hasData&&!confirm('この試合結果を削除しますか？'))return;
+    const inFocus=document.getElementById('focus-slot').contains(row);
     row.remove();
+    if(inFocus)closeFocusMode();
   };
-  top.appendChild(koIn);top.appendChild(oppIn);top.appendChild(rm);
+  const focusBtn=document.createElement('button');focusBtn.type='button';focusBtn.className='r-focus';focusBtn.title='この試合だけに集中（他を誤って操作しないようにする）';focusBtn.textContent='⛶';
+  focusBtn.onclick=function(){enterFocusMode(row);};
+  top.appendChild(koIn);top.appendChild(oppIn);top.appendChild(focusBtn);top.appendChild(rm);
   mid.appendChild(usIn);mid.appendChild(usPlus);mid.appendChild(usClr);mid.appendChild(sep);mid.appendChild(thIn);mid.appendChild(thPlus);mid.appendChild(thClr);mid.appendChild(gadd);
   row.appendChild(top);row.appendChild(mid);row.appendChild(goals);
   list.appendChild(row);
@@ -1375,7 +1410,7 @@ async function saveDraft(){
   const dateOk=/^\d{4}-\d{2}-\d{2}$/.test(dt);
   if(!ttl||!dt||!dateOk){showToast('タイトルと日付（YYYY-MM-DD形式）は必須です');return;}
   const btn=document.getElementById('dft-btn');btn.disabled=true;btn.textContent='⏳ 保存中...';
-  const rrows=document.querySelectorAll('#results-list .rrow');
+  const rrows=allResultRows();
   const results=[];
   rrows.forEach(row=>{const opp=stripVs(row.querySelector('.r-opp').value),ko=row.querySelector('.r-time').value,us=row.querySelector('.r-us').value,th=row.querySelector('.r-th').value,scorers=collectScorers(row);if(opp||ko||us!==''||th!==''||scorers)results.push({opp,ko,us,th,scorers});});
   const newId=eid||gid();
@@ -1658,7 +1693,7 @@ function timerReset(){
   timerBlurActive();
   timerClearState();renderAllTimerUI();
 }
-function renderAllTimerUI(){renderTimerModal();renderFmTimer();renderDmTimer();}
+function renderAllTimerUI(){renderTimerModal();renderFmTimer();renderDmTimer();renderFocusTimer();}
 function timerTick(){
   const s=timerLoad();
   // タイマー未使用（分数入力待ち）の時は表示上の変化が無いため再描画しない。
@@ -1748,7 +1783,44 @@ function renderDmTimer(){
   box.className='inline-timer';
   box.innerHTML=timerInlineHtml('dm');
 }
+function renderFocusTimer(){
+  const box=document.getElementById('focus-timer');
+  if(!box)return;
+  if(box.contains(document.activeElement))return;
+  box.style.display='';
+  box.className='inline-timer';
+  box.innerHTML=timerInlineHtml('focus');
+}
 setInterval(timerTick,1000);
+
+// ===== 集中モード（1試合の結果入力に集中し、他の項目を誤操作しないための全画面表示） =====
+let _focusOrigin=null;
+function enterFocusMode(row){
+  const slot=document.getElementById('focus-slot');
+  _focusOrigin={parent:row.parentNode,next:row.nextSibling};
+  slot.appendChild(row);
+  updateFocusTitle(row);
+  const oppIn=row.querySelector('.r-opp');
+  if(oppIn&&!oppIn._focusBound){
+    oppIn._focusBound=true;
+    oppIn.addEventListener('input',function(){updateFocusTitle(row);});
+  }
+  renderFocusTimer();
+  document.getElementById('focus-mode').classList.add('open');
+}
+function updateFocusTitle(row){
+  const opp=stripVs(row.querySelector('.r-opp').value);
+  document.getElementById('focus-title').textContent=opp?'⚽ vs '+opp:'⚽ 試合に集中';
+}
+function closeFocusMode(){
+  const slot=document.getElementById('focus-slot');
+  const row=slot.firstElementChild;
+  if(row&&_focusOrigin){
+    _focusOrigin.parent.insertBefore(row,_focusOrigin.next);
+  }
+  _focusOrigin=null;
+  document.getElementById('focus-mode').classList.remove('open');
+}
 
 // ===== 初期化 =====
 loadCache();
